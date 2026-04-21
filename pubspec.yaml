@@ -1,0 +1,80 @@
+name: aplikasi_fitness
+description: "FitPro - Aplikasi Mobile Fitness"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # === Supabase (Auth + Database) ===
+  supabase_flutter: ^2.8.4
+
+  # === Security & Storage ===
+  flutter_secure_storage: ^9.2.4
+  crypto: ^3.0.6
+  hive_ce: ^2.6.0
+  hive_ce_flutter: ^2.3.0
+
+  # === State Management ===
+  provider: ^6.1.2
+
+  # === Network ===
+  http: ^1.3.0
+  dio: ^5.8.0
+
+  # === Authentication ===
+  local_auth: ^2.3.0
+
+  # === UI & Design ===
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  lottie: ^3.3.1
+  fl_chart: ^0.70.2
+  flutter_svg: ^2.0.17
+  flutter_animate: ^4.5.2
+
+  # === Location & Maps (LBS) ===
+  geolocator: ^13.0.2
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geocoding: ^3.0.0
+
+  # === Sensors ===
+  sensors_plus: ^6.1.1
+  pedometer: ^4.0.2
+
+  # === AI/LLM ===
+  google_generative_ai: ^0.4.7
+
+  # === Notifications ===
+  flutter_local_notifications: ^18.0.1
+
+  # === Currency & Time ===
+  intl: ^0.19.0
+  timezone: ^0.10.0
+
+  # === Image ===
+  image_picker: ^1.1.2
+  image_cropper: ^8.0.2
+
+  # === Utils ===
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+  connectivity_plus: ^6.1.1
+  permission_handler: ^11.3.1
+  flutter_dotenv: ^5.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
