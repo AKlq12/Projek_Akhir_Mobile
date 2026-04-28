@@ -602,14 +602,9 @@ class _ShakeExerciseScreenState extends State<ShakeExerciseScreen>
           ...provider.shakeHistory.asMap().entries.map((entry) {
             final index = entry.key;
             final exercise = entry.value;
+            final isLatest = index == 0;
 
-            // Skip the first one if it's the currently displayed exercise
-            if (index == 0 &&
-                provider.suggestedExercise?.id == exercise.id) {
-              return const SizedBox.shrink();
-            }
-
-            return _buildHistoryItem(context, exercise, index)
+            return _buildHistoryItem(context, exercise, index, isLatest: isLatest)
                 .animate(delay: Duration(milliseconds: index * 80))
                 .fadeIn(duration: 300.ms)
                 .slideX(begin: 0.05, end: 0);
@@ -620,7 +615,8 @@ class _ShakeExerciseScreenState extends State<ShakeExerciseScreen>
   }
 
   Widget _buildHistoryItem(
-      BuildContext context, Exercise exercise, int index) {
+      BuildContext context, Exercise exercise, int index,
+      {bool isLatest = false}) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -647,8 +643,13 @@ class _ShakeExerciseScreenState extends State<ShakeExerciseScreen>
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh,
+                  color: isLatest
+                      ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+                      : colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(10),
+                  border: isLatest
+                      ? Border.all(color: colorScheme.primary.withValues(alpha: 0.5))
+                      : null,
                 ),
                 child: Center(
                   child: Text(
@@ -656,7 +657,9 @@ class _ShakeExerciseScreenState extends State<ShakeExerciseScreen>
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurfaceVariant,
+                      color: isLatest
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -677,15 +680,38 @@ class _ShakeExerciseScreenState extends State<ShakeExerciseScreen>
                         color: colorScheme.onSurface,
                       ),
                     ),
-                    if (exercise.categoryName.isNotEmpty)
-                      Text(
-                        exercise.categoryName,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                    Row(
+                      children: [
+                        if (exercise.categoryName.isNotEmpty)
+                          Text(
+                            exercise.categoryName,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        if (isLatest) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'LATEST',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),

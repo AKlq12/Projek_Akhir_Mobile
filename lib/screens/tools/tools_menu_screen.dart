@@ -104,7 +104,7 @@ class ToolsMenuScreen extends StatelessWidget {
                       width: 40,
                       height: 40,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
+                      errorBuilder: (_, _, _) =>
                           _buildAvatarFallback(context, firstName),
                     )
                   : _buildAvatarFallback(context, firstName),

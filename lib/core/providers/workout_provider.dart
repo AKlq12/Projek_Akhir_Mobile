@@ -125,7 +125,7 @@ class WorkoutProvider extends ChangeNotifier {
 
   // Rest timer
   bool _isResting = false;
-  int _restSeconds = 60;
+  final int _restSeconds = 60;
   int _restRemaining = 0;
   Timer? _restTickTimer;
 
@@ -460,7 +460,9 @@ class WorkoutProvider extends ChangeNotifier {
           sets: null,
           reps: null,
           weightKg: null,
-          durationMinutes: _sessionElapsed.inMinutes,
+          durationMinutes: _sessionElapsed.inSeconds > 0 
+              ? (_sessionElapsed.inSeconds / 60).ceil() 
+              : 0,
           notes:
               'Completed ${_sessionLogs.length} sets across ${_sessionExercises.length} exercises',
           performedAt: DateTime.now(),
@@ -479,6 +481,44 @@ class WorkoutProvider extends ChangeNotifier {
   bool get isSessionComplete =>
       _currentExerciseIndex >= _sessionExercises.length - 1 &&
       _currentSet >= totalSetsForCurrentExercise;
+
+  /// Resets all in-memory state. Called on user sign-out to ensure
+  /// data isolation between accounts.
+  void resetState() {
+    // Stop any active timers
+    _sessionTickTimer?.cancel();
+    _restTickTimer?.cancel();
+
+    // Reset plan list state
+    _isLoading = false;
+    _errorMessage = '';
+    _plans = [];
+    _planExercises = {};
+    _selectedDayFilter = null;
+
+    // Reset form state
+    _formPlanName = '';
+    _formPlanDescription = '';
+    _formSelectedDay = null;
+    _formExercises = [];
+    _isSaving = false;
+
+    // Reset session state
+    _activePlan = null;
+    _sessionExercises = [];
+    _currentExerciseIndex = 0;
+    _currentSet = 1;
+    _sessionReps = 12;
+    _sessionWeight = 0;
+    _sessionNotes = '';
+    _sessionTimer.reset();
+    _sessionElapsed = Duration.zero;
+    _isResting = false;
+    _restRemaining = 0;
+    _sessionLogs.clear();
+
+    notifyListeners();
+  }
 
   @override
   void dispose() {

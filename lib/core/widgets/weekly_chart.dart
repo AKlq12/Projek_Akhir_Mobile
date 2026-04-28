@@ -67,6 +67,20 @@ class WeeklyChart extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    // ── Time Label ───────────────────────────────────
+                    if (value > 0) ...[
+                      Text(
+                        '${value}m',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          color: isToday
+                              ? colorScheme.onSurface
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                      ).animate().fadeIn(delay: 800.ms),
+                      const SizedBox(height: 4),
+                    ],
                     // ── Bar ───────────────────────────────────────────
                     Expanded(
                       child: Align(

@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 
 import '../../config/routes.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/chat_provider.dart';
+import '../../core/providers/sensor_provider.dart';
+import '../../core/providers/tools_provider.dart';
 
 /// Login screen with email/password fields, biometric option, and sign-up link.
 ///
@@ -60,6 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
+      // Load per-user data
+      context.read<ToolsProvider>().loadUserData(authProvider.user.id);
+      context.read<SensorProvider>().loadUserData(authProvider.user.id);
+      context.read<ChatProvider>().loadUserData(authProvider.user.id);
       Navigator.of(context).pushReplacementNamed(AppRoutes.main);
     } else {
       _showErrorSnackBar(authProvider.errorMessage);
@@ -73,6 +80,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
+      // Load per-user data
+      context.read<ToolsProvider>().loadUserData(authProvider.user.id);
+      context.read<SensorProvider>().loadUserData(authProvider.user.id);
+      context.read<ChatProvider>().loadUserData(authProvider.user.id);
       Navigator.of(context).pushReplacementNamed(AppRoutes.main);
     } else {
       _showErrorSnackBar(authProvider.errorMessage);

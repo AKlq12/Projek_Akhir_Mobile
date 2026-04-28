@@ -301,7 +301,7 @@ class _ExerciseCategoryScreenState extends State<ExerciseCategoryScreen> {
                 childAspectRatio: 0.72,
               ),
               delegate: SliverChildBuilderDelegate(
-                (_, __) => _buildGridShimmerCard(context),
+                (_, _) => _buildGridShimmerCard(context),
                 childCount: 6,
               ),
             ),
@@ -497,9 +497,9 @@ class _CategoryExerciseCard extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: exercise.primaryImageUrl!,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) =>
+                          placeholder: (_, _) =>
                               _buildPlaceholder(context),
-                          errorWidget: (_, __, ___) =>
+                          errorWidget: (_, _, _) =>
                               _buildPlaceholder(context),
                         )
                       : _buildPlaceholder(context),

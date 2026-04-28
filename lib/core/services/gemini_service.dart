@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 import '../../config/constants.dart';
@@ -46,13 +47,15 @@ Guidelines:
   void _ensureInitialized() {
     if (_model != null) return;
 
-    final apiKey = AppConstants.geminiApiKey;
+    final apiKey = AppConstants.geminiApiKey.trim();
     if (apiKey.isEmpty) {
+      debugPrint('[GeminiService] ERROR: GEMINI_API_KEY is empty!');
       throw Exception('GEMINI_API_KEY tidak ditemukan di .env');
     }
 
+    debugPrint('[GeminiService] Initializing with model: gemini-1.5-flash');
     _model = GenerativeModel(
-      model: 'gemini-1.5-pro',
+      model: 'gemini-1.5-flash',
       apiKey: apiKey,
       systemInstruction: Content.text(_systemInstruction),
       generationConfig: GenerationConfig(
@@ -62,12 +65,10 @@ Guidelines:
         maxOutputTokens: 2048,
       ),
       safetySettings: [
-        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.medium),
-        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.medium),
-        SafetySetting(
-            HarmCategory.sexuallyExplicit, HarmBlockThreshold.medium),
-        SafetySetting(
-            HarmCategory.dangerousContent, HarmBlockThreshold.medium),
+        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.sexuallyExplicit, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.dangerousContent, HarmBlockThreshold.none),
       ],
     );
 
@@ -83,11 +84,15 @@ Guidelines:
     _ensureInitialized();
 
     try {
+      debugPrint('[GeminiService] Sending message: $message');
       final response = await _chat!.sendMessage(Content.text(message));
+      debugPrint('[GeminiService] Received response: ${response.text}');
       return response.text ?? 'Maaf, saya tidak bisa memproses respons.';
     } on GenerativeAIException catch (e) {
+      debugPrint('[GeminiService] GenerativeAIException: ${e.message}');
       throw _mapError(e);
     } catch (e) {
+      debugPrint('[GeminiService] Unexpected Error: $e');
       throw Exception('Gagal menghubungi AI: $e');
     }
   }
@@ -101,16 +106,28 @@ Guidelines:
     _ensureInitialized();
 
     try {
+      debugPrint('[GeminiService] Starting stream for: $message');
       final response = _chat!.sendMessageStream(Content.text(message));
       await for (final chunk in response) {
         final text = chunk.text;
         if (text != null && text.isNotEmpty) {
+          debugPrint('[GeminiService] Received chunk: ${text.length} chars');
           yield text;
+        } else {
+          debugPrint(
+            '[GeminiService] Warning: Received empty chunk or blocked by safety.',
+          );
+          if (chunk.candidates.isNotEmpty) {
+            final reason = chunk.candidates.first.finishReason;
+            debugPrint('[GeminiService] Finish reason: $reason');
+          }
         }
       }
     } on GenerativeAIException catch (e) {
+      debugPrint('[GeminiService] Stream GenerativeAIException: ${e.message}');
       throw _mapError(e);
     } catch (e) {
+      debugPrint('[GeminiService] Stream Unexpected Error: $e');
       throw Exception('Gagal menghubungi AI: $e');
     }
   }

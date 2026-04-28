@@ -223,8 +223,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-          child: Column(
-            children: [
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
               // Avatar with white border
               Container(
                 width: 110,
@@ -257,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            errorBuilder: (_, _, _) =>
                                 _buildAvatarFallback(context, user.fullName),
                           )
                         : _buildAvatarFallback(context, user.fullName),
@@ -270,6 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Name
               Text(
                 user.fullName.isNotEmpty ? user.fullName : 'User',
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
@@ -282,6 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Email
               Text(
                 user.email,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -325,6 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ],
@@ -493,13 +499,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'FITNESS OVERVIEW',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2.5,
-              color: colorScheme.onSurface,
+          Center(
+            child: Text(
+              'FITNESS OVERVIEW',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.5,
+                color: colorScheme.onSurface,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -573,12 +582,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 22, color: colorScheme.onSurface),
           const SizedBox(height: 10),
           Text(
             label,
+            textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -588,6 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 2),
           Text(
             value,
+            textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.w900,
@@ -610,15 +621,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            'PREFERENCES',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2.5,
-              color: colorScheme.onSurface,
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'PREFERENCES',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.5,
+                color: colorScheme.onSurface,
+              ),
             ),
           ),
         ),
@@ -658,6 +672,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final authProvider = context.read<AuthProvider>();
             _showBiometricDialog(context, authProvider);
           },
+        ),
+        const SizedBox(height: 10),
+
+        // Saran & Kesan TPM
+        _buildMenuItem(
+          context,
+          icon: Icons.rate_review_rounded,
+          label: 'Saran & Kesan TPM',
+          iconBgColor: colorScheme.primaryContainer,
+          iconColor: colorScheme.onPrimaryContainer,
+          onTap: () => Navigator.of(context).pushNamed(AppRoutes.feedback),
         ),
         const SizedBox(height: 10),
 
@@ -767,6 +792,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Icon circle
             Container(
@@ -832,7 +858,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
-              context.read<AuthProvider>().signOut();
+              context.read<AuthProvider>().signOut(context);
               Navigator.of(context).pushNamedAndRemoveUntil(
                 AppRoutes.login,
                 (route) => false,

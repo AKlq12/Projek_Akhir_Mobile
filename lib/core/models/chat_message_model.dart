@@ -46,4 +46,21 @@ class ChatMessage {
         role: role,
         timestamp: timestamp,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'text': text,
+        'role': role.name,
+        'timestamp': timestamp.toIso8601String(),
+      };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+        id: json['id'] as String,
+        text: json['text'] as String,
+        role: MessageRole.values.firstWhere(
+          (e) => e.name == json['role'],
+          orElse: () => MessageRole.user,
+        ),
+        timestamp: DateTime.parse(json['timestamp'] as String),
+      );
 }

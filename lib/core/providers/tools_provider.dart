@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:hive_ce/hive_ce.dart';
 import 'package:intl/intl.dart';
 
 import '../services/exchange_rate_service.dart';
@@ -7,7 +10,15 @@ import '../services/exchange_rate_service.dart';
 ///
 /// Manages currency conversion state, recent conversion history,
 /// and timezone list for the World Clock feature.
+///
+/// History and timezone customizations are persisted per-user using Hive,
+/// so each account retains its own data across logins.
 class ToolsProvider extends ChangeNotifier {
+  // Current user ID for per-user persistence
+  String? _userId;
+
+  // Hive box name for tools data
+  static const String _toolsBoxName = 'settings';
   // ═══════════════════════════════════════════════════════════════════════════
   // CURRENCY CONVERTER STATE
   // ═══════════════════════════════════════════════════════════════════════════
@@ -138,6 +149,7 @@ class ToolsProvider extends ChangeNotifier {
   /// Clear all recent conversions.
   void clearRecentConversions() {
     _recentConversions.clear();
+    _saveConversions();
     notifyListeners();
   }
 
@@ -161,6 +173,9 @@ class ToolsProvider extends ChangeNotifier {
     if (_recentConversions.length > 10) {
       _recentConversions.removeRange(10, _recentConversions.length);
     }
+
+    // Persist per-user
+    _saveConversions();
   }
 
   String _formatLastUpdated(String raw) {
@@ -265,6 +280,7 @@ class ToolsProvider extends ChangeNotifier {
   /// Set primary timezone.
   void setPrimaryTimezone(String timezoneId) {
     _primaryTimezoneId = timezoneId;
+    _saveTimezones();
     notifyListeners();
   }
 
@@ -336,6 +352,7 @@ class ToolsProvider extends ChangeNotifier {
   void addTimezone(TimezoneEntry entry) {
     if (!_timezones.any((t) => t.timezoneId == entry.timezoneId)) {
       _timezones.add(entry);
+      _saveTimezones();
       notifyListeners();
     }
   }
@@ -345,8 +362,122 @@ class ToolsProvider extends ChangeNotifier {
     // Don't remove the primary timezone
     if (timezoneId == _primaryTimezoneId) return;
     _timezones.removeWhere((t) => t.timezoneId == timezoneId);
+    _saveTimezones();
     notifyListeners();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PER-USER PERSISTENCE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Loads user-specific conversion history and timezone list from Hive.
+  /// Called after a user signs in.
+  void loadUserData(String userId) {
+    _userId = userId;
+
+    try {
+      final box = Hive.box(_toolsBoxName);
+
+      // Load conversion history
+      final conversionsRaw = box.get('conversions_$userId') as String?;
+      _recentConversions.clear();
+      if (conversionsRaw != null) {
+        final list = jsonDecode(conversionsRaw) as List;
+        for (final item in list) {
+          _recentConversions.add(
+            ConversionRecord.fromJson(item as Map<String, dynamic>),
+          );
+        }
+      }
+
+      // Load timezone list
+      final timezonesRaw = box.get('timezones_$userId') as String?;
+      if (timezonesRaw != null) {
+        final list = jsonDecode(timezonesRaw) as List;
+        _timezones.clear();
+        for (final item in list) {
+          _timezones.add(
+            TimezoneEntry.fromJson(item as Map<String, dynamic>),
+          );
+        }
+      }
+
+      // Load primary timezone
+      final primaryTz = box.get('primary_tz_$userId') as String?;
+      if (primaryTz != null) {
+        _primaryTimezoneId = primaryTz;
+      }
+
+      debugPrint('[ToolsProvider] Loaded user data for $userId');
+    } catch (e) {
+      debugPrint('[ToolsProvider] Error loading user data: $e');
+    }
+
+    notifyListeners();
+  }
+
+  /// Saves conversion history to Hive for the current user.
+  void _saveConversions() {
+    if (_userId == null) return;
+    try {
+      final box = Hive.box(_toolsBoxName);
+      final data = _recentConversions.map((r) => r.toJson()).toList();
+      box.put('conversions_$_userId', jsonEncode(data));
+    } catch (e) {
+      debugPrint('[ToolsProvider] Error saving conversions: $e');
+    }
+  }
+
+  /// Saves timezone list to Hive for the current user.
+  void _saveTimezones() {
+    if (_userId == null) return;
+    try {
+      final box = Hive.box(_toolsBoxName);
+      final data = _timezones.map((t) => t.toJson()).toList();
+      box.put('timezones_$_userId', jsonEncode(data));
+      box.put('primary_tz_$_userId', _primaryTimezoneId);
+    } catch (e) {
+      debugPrint('[ToolsProvider] Error saving timezones: $e');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RESET STATE (for account isolation)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Resets in-memory state on sign-out. Per-user data remains in Hive
+  /// and will be loaded again when the same user signs back in.
+  void resetState() {
+    _userId = null;
+
+    // Reset currency converter state
+    _fromCurrency = 'USD';
+    _toCurrency = 'IDR';
+    _amount = 1000.0;
+    _convertedAmount = 0.0;
+    _rate = 0.0;
+    _lastUpdated = '';
+    _isConverting = false;
+    _conversionError = null;
+    _recentConversions.clear();
+
+    // Reset timezone list to defaults
+    _primaryTimezoneId = 'Asia/Jakarta';
+    _timezones.clear();
+    _timezones.addAll(_defaultTimezones);
+
+    notifyListeners();
+  }
+
+  /// Default timezone list used for new users or after reset.
+  static const List<TimezoneEntry> _defaultTimezones = [
+    TimezoneEntry(city: 'Jakarta', timezoneId: 'Asia/Jakarta', abbreviation: 'WIB', utcOffsetHours: 7),
+    TimezoneEntry(city: 'Makassar', timezoneId: 'Asia/Makassar', abbreviation: 'WITA', utcOffsetHours: 8),
+    TimezoneEntry(city: 'Jayapura', timezoneId: 'Asia/Jayapura', abbreviation: 'WIT', utcOffsetHours: 9),
+    TimezoneEntry(city: 'Tokyo', timezoneId: 'Asia/Tokyo', abbreviation: 'JST', utcOffsetHours: 9),
+    TimezoneEntry(city: 'London', timezoneId: 'Europe/London', abbreviation: 'BST', utcOffsetHours: 1),
+    TimezoneEntry(city: 'New York', timezoneId: 'America/New_York', abbreviation: 'EDT', utcOffsetHours: -4),
+  ];
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -391,6 +522,26 @@ class ConversionRecord {
     if (diff.inDays == 1) return 'Yesterday';
     return DateFormat('MMM dd').format(timestamp);
   }
+
+  /// Serializes to JSON for Hive persistence.
+  Map<String, dynamic> toJson() => {
+    'from': from,
+    'to': to,
+    'fromAmount': fromAmount,
+    'toAmount': toAmount,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  /// Deserializes from JSON.
+  factory ConversionRecord.fromJson(Map<String, dynamic> json) {
+    return ConversionRecord(
+      from: json['from'] as String,
+      to: json['to'] as String,
+      fromAmount: (json['fromAmount'] as num).toDouble(),
+      toAmount: (json['toAmount'] as num).toDouble(),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
+  }
 }
 
 /// Represents a timezone entry for the World Clock.
@@ -406,4 +557,22 @@ class TimezoneEntry {
     required this.abbreviation,
     required this.utcOffsetHours,
   });
+
+  /// Serializes to JSON for Hive persistence.
+  Map<String, dynamic> toJson() => {
+    'city': city,
+    'timezoneId': timezoneId,
+    'abbreviation': abbreviation,
+    'utcOffsetHours': utcOffsetHours,
+  };
+
+  /// Deserializes from JSON.
+  factory TimezoneEntry.fromJson(Map<String, dynamic> json) {
+    return TimezoneEntry(
+      city: json['city'] as String,
+      timezoneId: json['timezoneId'] as String,
+      abbreviation: json['abbreviation'] as String,
+      utcOffsetHours: json['utcOffsetHours'] as int,
+    );
+  }
 }

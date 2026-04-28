@@ -458,7 +458,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: ToolsProvider.supportedCurrencies.length,
-                    separatorBuilder: (_, __) => Divider(
+                    separatorBuilder: (_, _) => Divider(
                       height: 1,
                       color: colorScheme.outlineVariant.withValues(alpha: 0.1),
                     ),
@@ -630,7 +630,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: ToolsProvider.popularPairs.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final pair = ToolsProvider.popularPairs[index];
               final isActive = provider.fromCurrency == pair[0] &&

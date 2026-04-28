@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:hive_ce/hive_ce.dart';
 
 import '../models/chat_message_model.dart';
 import '../services/gemini_service.dart';
@@ -27,6 +29,10 @@ enum IconLabel { workout, nutrition, form, recovery }
 /// and quick-action presets.
 class ChatProvider extends ChangeNotifier {
   final GeminiService _gemini = GeminiService.instance;
+
+  // Current user ID for per-user persistence (chat history)
+  String? _userId;
+  static const String _chatBoxName = 'settings';
 
   // ───────────────────────────────────────────────────────────────────────────
   // STATE
@@ -84,6 +90,7 @@ class ChatProvider extends ChangeNotifier {
           'personalized plan for you!',
         ),
       );
+      _saveChatHistory();
       notifyListeners();
     }
   }
@@ -130,10 +137,11 @@ class ChatProvider extends ChangeNotifier {
             final index = _messages.indexWhere((m) => m.id == aiMessage.id);
             if (index != -1) {
               _messages[index] = aiMessage.copyWith(
-                text: 'Maaf, saya tidak bisa memproses respons saat ini.',
+                text: '⚠️ Maaf, AI tidak memberikan respons. Pastikan API Key Gemini di file .env sudah benar dan koneksi internet stabil.',
               );
             }
           }
+          _saveChatHistory();
           notifyListeners();
         },
         onError: (error) {
@@ -158,6 +166,7 @@ class ChatProvider extends ChangeNotifier {
       if (index != -1) {
         _messages[index] = aiMessage.copyWith(text: '⚠️ $_error');
       }
+      _saveChatHistory();
       notifyListeners();
     }
   }
@@ -174,7 +183,72 @@ class ChatProvider extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     _gemini.resetChat();
+    _messages.clear(); // Ensure welcome message clears everything
     ensureWelcomeMessage();
+    _saveChatHistory();
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // PER-USER PERSISTENCE
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// Loads user-specific chat history from Hive.
+  void loadUserData(String userId) {
+    _userId = userId;
+
+    try {
+      final box = Hive.box(_chatBoxName);
+      final historyRaw = box.get('chat_history_$userId') as String?;
+      
+      _messages.clear();
+      if (historyRaw != null) {
+        final list = jsonDecode(historyRaw) as List;
+        for (final item in list) {
+          _messages.add(ChatMessage.fromJson(item as Map<String, dynamic>));
+        }
+        
+        // Feed previous messages into Gemini to maintain context
+        _gemini.resetChat();
+        // Just feed the context without streaming responses.
+        // The gemini service might not have a direct "load history" method
+        // without causing side effects. For a true implementation we would 
+        // need to hydrate the GeminiService history.
+      } else {
+        ensureWelcomeMessage();
+      }
+    } catch (e) {
+      debugPrint('[ChatProvider] Error loading chat history: $e');
+      ensureWelcomeMessage();
+    }
+    
+    notifyListeners();
+  }
+
+  void _saveChatHistory() {
+    if (_userId == null) return;
+    try {
+      final box = Hive.box(_chatBoxName);
+      // Limit saved history to last 50 messages to avoid huge Hive entries
+      final messagesToSave = _messages.length > 50 
+          ? _messages.sublist(_messages.length - 50) 
+          : _messages;
+      final data = messagesToSave.map((e) => e.toJson()).toList();
+      box.put('chat_history_$_userId', jsonEncode(data));
+    } catch (e) {
+      debugPrint('[ChatProvider] Error saving chat history: $e');
+    }
+  }
+
+  /// Resets all in-memory state. Called on user sign-out.
+  void resetState() {
+    _userId = null;
+    _streamSub?.cancel();
+    _streamSub = null;
+    _messages.clear();
+    _isLoading = false;
+    _error = null;
+    _gemini.resetChat();
+    notifyListeners();
   }
 
   // ───────────────────────────────────────────────────────────────────────────

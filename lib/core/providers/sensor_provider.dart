@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:hive_ce/hive_ce.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/constants.dart';
@@ -23,12 +25,16 @@ class SensorProvider extends ChangeNotifier {
   final SupabaseService _supabaseService = SupabaseService.instance;
   final WgerApiService _wgerApi = WgerApiService.instance;
 
+  // Current user ID for per-user persistence (shake history)
+  String? _userId;
+  static const String _sensorBoxName = 'settings';
+
   // ─────────────────────────────────────────────────────────────────────────
   // STEP COUNTER STATE
   // ─────────────────────────────────────────────────────────────────────────
 
   int _currentSteps = 0;
-  int _dailyGoal = AppConstants.defaultStepGoal;
+  final int _dailyGoal = AppConstants.defaultStepGoal;
   bool _isTracking = false;
   bool _isLoading = false;
   String _errorMessage = '';
@@ -254,6 +260,8 @@ class SensorProvider extends ChangeNotifier {
         if (_shakeHistory.length > 10) {
           _shakeHistory.removeRange(10, _shakeHistory.length);
         }
+        
+        _saveShakeHistory();
       }
     } catch (e) {
       debugPrint('[SensorProvider] Shake exercise error: $e');
@@ -293,6 +301,73 @@ class SensorProvider extends ChangeNotifier {
   /// Clears the suggested exercise (dismiss the card).
   void clearSuggestion() {
     _suggestedExercise = null;
+    notifyListeners();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PER-USER PERSISTENCE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Loads user-specific shake history from Hive.
+  void loadUserData(String userId) {
+    _userId = userId;
+
+    try {
+      final box = Hive.box(_sensorBoxName);
+      final historyRaw = box.get('shake_history_$userId') as String?;
+      
+      _shakeHistory.clear();
+      if (historyRaw != null) {
+        final list = jsonDecode(historyRaw) as List;
+        for (final item in list) {
+          _shakeHistory.add(Exercise.fromJson(item as Map<String, dynamic>));
+        }
+      }
+    } catch (e) {
+      debugPrint('[SensorProvider] Error loading user data: $e');
+    }
+    
+    notifyListeners();
+  }
+
+  void _saveShakeHistory() {
+    if (_userId == null) return;
+    try {
+      final box = Hive.box(_sensorBoxName);
+      final data = _shakeHistory.map((e) => e.toJson()).toList();
+      box.put('shake_history_$_userId', jsonEncode(data));
+    } catch (e) {
+      debugPrint('[SensorProvider] Error saving shake history: $e');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RESET STATE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Resets in-memory state on sign-out.
+  void resetState() {
+    _userId = null;
+    // Stop sensors
+    _sensorService.stopStepCounting();
+    _sensorService.stopShakeDetection();
+
+    // Reset step counter state
+    _currentSteps = 0;
+    _isTracking = false;
+    _isLoading = false;
+    _errorMessage = '';
+    _weeklySteps = List.filled(7, 0);
+    _stepGoalNotified = false;
+
+    // Reset shake feature state
+    _suggestedExercise = null;
+    _isShakeActive = false;
+    _isLoadingExercise = false;
+    _shakeCount = 0;
+    _shakeHistory.clear();
+    _cachedExercises = [];
+
     notifyListeners();
   }
 

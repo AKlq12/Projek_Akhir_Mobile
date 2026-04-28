@@ -172,7 +172,7 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
         options: MapOptions(
           initialCenter: center,
           initialZoom: 14,
-          onTap: (_, __) => provider.selectGym(null),
+          onTap: (_, _) => provider.selectGym(null),
         ),
         children: [
           // OSM Tile Layer
@@ -415,7 +415,7 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24),
         itemCount: GymProvider.radiusOptions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final radius = GymProvider.radiusOptions[index];
           final isActive = provider.radiusKm == radius;
@@ -574,7 +574,7 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
       itemCount: provider.gyms.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final gym = provider.gyms[index];
         final isSelected = provider.selectedGym?.id == gym.id;

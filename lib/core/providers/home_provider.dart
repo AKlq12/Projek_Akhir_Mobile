@@ -229,6 +229,20 @@ class HomeProvider extends ChangeNotifier {
   // HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
+  /// Resets all in-memory state. Called on user sign-out to ensure
+  /// data isolation between accounts.
+  void resetState() {
+    _isLoading = false;
+    _errorMessage = '';
+    _todaySteps = null;
+    _todayWorkouts = [];
+    _todayPlan = null;
+    _todayPlanExercises = [];
+    _weeklyActivity = {};
+    _workoutStreak = 0;
+    notifyListeners();
+  }
+
   String _getDayOfWeekName(int weekday) {
     const days = {
       1: 'Monday',

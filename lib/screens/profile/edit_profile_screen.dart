@@ -468,7 +468,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               width: 110,
                               height: 110,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
+                              errorBuilder: (_, _, _) =>
                                   _buildAvatarFallback(
                                       context, user.fullName),
                             )

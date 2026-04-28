@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../config/constants.dart';
@@ -163,22 +164,30 @@ class WgerApiService {
   /// Searches exercises by name using the wger search endpoint.
   Future<List<Exercise>> searchExercises(String query) async {
     if (query.trim().isEmpty) return [];
+    try {
+      final queryParams = {
+        'term': query,
+        'format': 'json',
+      };
+      final uri = Uri.parse('${AppConstants.wgerBaseUrl}/exercise/search/')
+          .replace(queryParameters: queryParams);
 
-    final uri = Uri.parse(
-      'https://wger.de/api/v2/exercise/search/?term=${Uri.encodeComponent(query)}&language=english&format=json',
-    );
-    final response = await _client.get(uri, headers: _headers).timeout(
-      Duration(seconds: AppConstants.apiTimeoutSeconds),
-    );
+      final response = await _client.get(uri, headers: _headers).timeout(
+        Duration(seconds: AppConstants.apiTimeoutSeconds),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final suggestions = data['suggestions'] as List<dynamic>? ?? [];
-      return suggestions
-          .map((s) => Exercise.fromSearchJson(s as Map<String, dynamic>))
-          .toList();
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final suggestions = data['suggestions'] as List<dynamic>? ?? [];
+        return suggestions
+            .map((s) => Exercise.fromSearchJson(s as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception('Failed to search exercises: ${response.statusCode}');
+    } catch (e) {
+      debugPrint('Search API Error: $e');
+      rethrow;
     }
-    throw Exception('Failed to search exercises: ${response.statusCode}');
   }
 
   // ─────────────────────────────────────────────────────────────────────────

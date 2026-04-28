@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/feedback_model.dart';
 import '../models/favorite_exercise_model.dart';
 import '../models/notification_settings_model.dart';
 import '../models/plan_exercise_model.dart';
@@ -482,5 +483,35 @@ class SupabaseService {
       debugPrint('Error getting workout streak: $e');
       return 0;
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FEEDBACK (SARAN & KESAN)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Submits suggestions and impressions for the TPM course to Supabase.
+  Future<void> submitFeedback({
+    required String suggestion,
+    required String impression,
+  }) async {
+    _requireAuth();
+    await _client.from('course_feedback').insert({
+      'user_id': _userId,
+      'suggestion': suggestion,
+      'impression': impression,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Fetches all feedback submitted by the current user.
+  Future<List<FeedbackModel>> getFeedback() async {
+    _requireAuth();
+    final data = await _client
+        .from('course_feedback')
+        .select()
+        .eq('user_id', _userId!)
+        .order('created_at', ascending: false);
+
+    return data.map((row) => FeedbackModel.fromJson(row)).toList();
   }
 }

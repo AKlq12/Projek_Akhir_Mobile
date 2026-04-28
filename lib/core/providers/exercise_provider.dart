@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/exercise_model.dart';
@@ -44,6 +45,7 @@ class ExerciseProvider extends ChangeNotifier {
   List<Exercise> get searchResults => _searchResults;
   bool _searchLoading = false;
   bool get searchLoading => _searchLoading;
+  Timer? _searchDebounce;
 
   // Exercise Detail
   Exercise? _selectedExercise;
@@ -166,11 +168,16 @@ class ExerciseProvider extends ChangeNotifier {
   // SEARCH
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Sets search query and performs search.
+  /// Sets search query and performs search with debounce.
   Future<void> search(String query) async {
     _searchQuery = query;
+
+    // Cancel existing debounce timer
+    _searchDebounce?.cancel();
+
     if (query.trim().isEmpty) {
       _searchResults = [];
+      _searchLoading = false;
       notifyListeners();
       return;
     }
@@ -178,15 +185,18 @@ class ExerciseProvider extends ChangeNotifier {
     _searchLoading = true;
     notifyListeners();
 
-    try {
-      _searchResults = await _api.searchExercises(query);
-    } catch (e) {
-      _errorMessage = 'Search failed: $e';
-      debugPrint(_errorMessage);
-    } finally {
-      _searchLoading = false;
-      notifyListeners();
-    }
+    // Delay search by 500ms
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        _searchResults = await _api.searchExercises(query);
+      } catch (e) {
+        _errorMessage = 'Search failed: $e';
+        debugPrint(_errorMessage);
+      } finally {
+        _searchLoading = false;
+        notifyListeners();
+      }
+    });
   }
 
   /// Clears search state.
@@ -259,7 +269,7 @@ class ExerciseProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _api.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 }

@@ -38,8 +38,10 @@ class Exercise {
     return Exercise(
       id: json['id'] as int,
       uuid: (json['uuid'] as String?) ?? '',
-      categoryId: json['category'] as int,
-      name: '', // Name comes from translations
+      categoryId: (json['category'] as int?) ?? 0,
+      name: (json['name'] as String?) ?? '',
+      categoryName: (json['category_name'] as String?) ?? '',
+      description: (json['description'] as String?) ?? '',
       muscles: (json['muscles'] as List<dynamic>?)
               ?.map((m) => m is Map<String, dynamic>
                   ? Muscle.fromJson(m)
@@ -56,15 +58,27 @@ class Exercise {
               ?.map((e) => e is int ? e : 0)
               .toList() ??
           [],
+      equipmentNames: (json['equipment_names'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      imageUrls: (json['image_urls'] as List<dynamic>?)
+              ?.map((e) {
+                final url = e as String;
+                if (url.isEmpty || url.startsWith('http')) return url;
+                return 'https://wger.de$url';
+              })
+              .toList() ??
+          [],
       variations: json['variations'] as int?,
     );
   }
 
   /// Creates from the `/api/v2/exerciseinfo/` endpoint (full data with translations).
   factory Exercise.fromInfoJson(Map<String, dynamic> json) {
-    // Extract English translation (language id = 2)
-    String name = '';
-    String description = '';
+    // Fallback: Use top-level name/description if translations are missing
+    String name = json['name']?.toString() ?? '';
+    String description = json['description']?.toString() ?? '';
     final translations = json['translations'] as List<dynamic>? ?? [];
     for (final t in translations) {
       if (t is Map<String, dynamic> && t['language'] == 2) {
@@ -80,9 +94,14 @@ class Exercise {
       description = (first['description'] as String?) ?? '';
     }
 
-    // Extract images
+    // Extract images and ensure absolute URLs
     final images = (json['images'] as List<dynamic>? ?? [])
-        .map((img) => (img as Map<String, dynamic>)['image'] as String? ?? '')
+        .map((img) {
+          final url = (img as Map<String, dynamic>)['image'] as String? ?? '';
+          if (url.isEmpty) return '';
+          if (url.startsWith('http')) return url;
+          return 'https://wger.de$url';
+        })
         .where((url) => url.isNotEmpty)
         .toList();
 
@@ -127,13 +146,28 @@ class Exercise {
 
   /// Creates from search results that combine exercise + translation data.
   factory Exercise.fromSearchJson(Map<String, dynamic> json) {
+    // Safely parse IDs that might be string or int from wger API
+    final dynamic rawId = json['data']?['id'] ?? json['id'];
+    final int parsedId = rawId is int
+        ? rawId
+        : int.tryParse(rawId?.toString() ?? '0') ?? 0;
+
+    final dynamic rawCatId = json['data']?['category'] ?? json['category'];
+    final int parsedCatId = rawCatId is int
+        ? rawCatId
+        : int.tryParse(rawCatId?.toString() ?? '0') ?? 0;
+
     return Exercise(
-      id: json['data']?['id'] as int? ?? json['id'] as int? ?? 0,
-      categoryId: json['data']?['category'] as int? ?? json['category'] as int? ?? 0,
+      id: parsedId,
+      categoryId: parsedCatId,
       name: json['value'] as String? ?? json['name'] as String? ?? '',
       description: '',
       imageUrls: json['data']?['image'] != null
-          ? [json['data']['image'] as String]
+          ? [
+              json['data']['image'].toString().startsWith('http')
+                  ? json['data']['image'].toString()
+                  : 'https://wger.de${json['data']['image']}'
+            ]
           : [],
       categoryName: json['data']?['category_name'] as String? ?? '',
     );
@@ -148,6 +182,10 @@ class Exercise {
         'description': description,
         'image_urls': imageUrls,
         'equipment_names': equipmentNames,
+        'equipment_ids': equipmentIds,
+        'muscles': muscles.map((m) => m.toJson()).toList(),
+        'muscles_secondary': musclesSecondary.map((m) => m.toJson()).toList(),
+        'variations': variations,
       };
 
   /// Returns the first image URL or null.

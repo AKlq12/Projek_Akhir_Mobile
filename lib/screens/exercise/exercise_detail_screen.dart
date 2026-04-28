@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../core/models/exercise_model.dart';
 import '../../core/models/muscle_model.dart';
+import '../../core/models/plan_exercise_model.dart';
 import '../../core/providers/exercise_provider.dart';
+import '../../core/providers/workout_provider.dart';
+import '../../core/services/supabase_service.dart';
 
 /// Exercise detail screen — full exercise info with hero image,
 /// tags, muscles worked, instructions, and pro tips.
@@ -70,6 +74,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                     child: _buildInfoCard(context, exercise),
                   ),
 
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
                   // Muscles Worked
                   if (exercise.muscles.isNotEmpty ||
                       exercise.musclesSecondary.isNotEmpty)
@@ -77,11 +83,15 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       child: _buildMusclesSection(context, exercise),
                     ),
 
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
                   // Instructions / Description
                   if (exercise.cleanDescription.isNotEmpty)
                     SliverToBoxAdapter(
                       child: _buildInstructionsSection(context, exercise),
                     ),
+
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
                   // Pro Tips
                   SliverToBoxAdapter(
@@ -180,6 +190,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   Widget _buildHeroSection(BuildContext context, Exercise exercise) {
     final colorScheme = Theme.of(context).colorScheme;
     final topPadding = MediaQuery.of(context).padding.top;
+    final imageUrl = exercise.primaryImageUrl;
+    final isSvg = imageUrl?.toLowerCase().endsWith('.svg') ?? false;
 
     return Stack(
       children: [
@@ -187,31 +199,46 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
         SizedBox(
           height: 280 + topPadding,
           width: double.infinity,
-          child: exercise.primaryImageUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: exercise.primaryImageUrl!,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    color: colorScheme.surfaceContainer,
-                    child: Center(
-                      child: Icon(
-                        Icons.fitness_center_rounded,
-                        size: 48,
-                        color: colorScheme.outlineVariant,
+          child: imageUrl != null
+              ? (isSvg
+                  ? SvgPicture.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      placeholderBuilder: (context) => Container(
+                        color: colorScheme.surfaceContainer,
+                        child: Center(
+                          child: Icon(
+                            Icons.fitness_center_rounded,
+                            size: 48,
+                            color: colorScheme.outlineVariant,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  errorWidget: (_, __, ___) => Container(
-                    color: colorScheme.surfaceContainer,
-                    child: Center(
-                      child: Icon(
-                        Icons.fitness_center_rounded,
-                        size: 48,
-                        color: colorScheme.outlineVariant,
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) => Container(
+                        color: colorScheme.surfaceContainer,
+                        child: Center(
+                          child: Icon(
+                            Icons.fitness_center_rounded,
+                            size: 48,
+                            color: colorScheme.outlineVariant,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                )
+                      errorWidget: (_, _, _) => Container(
+                        color: colorScheme.surfaceContainer,
+                        child: Center(
+                          child: Icon(
+                            Icons.fitness_center_rounded,
+                            size: 48,
+                            color: colorScheme.outlineVariant,
+                          ),
+                        ),
+                      ),
+                    ))
               : Container(
                   color: colorScheme.surfaceContainer,
                   child: Center(
@@ -255,9 +282,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Transform.translate(
-        offset: const Offset(0, -40),
-        child: Container(
+      child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLowest,
@@ -338,12 +363,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
               ),
             ],
           ),
-        ),
       ),
-    )
-        .animate(delay: 200.ms)
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: 0.05, end: 0);
+    ).animate(delay: 200.ms).fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildTag(
@@ -418,9 +439,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(top: 0, bottom: 8),
-      child: Transform.translate(
-        offset: const Offset(0, -20),
-        child: Column(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
@@ -511,12 +530,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
               ),
             ),
           ],
-        ),
       ),
-    )
-        .animate(delay: 300.ms)
-        .fadeIn(duration: 400.ms)
-        .slideX(begin: 0.05, end: 0);
+    ).animate(delay: 300.ms).fadeIn(duration: 400.ms).slideX(begin: 0.05, end: 0);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -532,67 +547,63 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
         .where((s) => s.trim().isNotEmpty)
         .toList();
 
-    return Transform.translate(
-      offset: const Offset(0, -10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'INSTRUCTIONS',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 3,
-                color: colorScheme.onSurfaceVariant,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'INSTRUCTIONS',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 3,
+              color: colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 14),
-
-            ...List.generate(sentences.length, (index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        (index + 1).toString().padLeft(2, '0'),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: colorScheme.primary.withValues(alpha: 0.6),
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          sentences[index].trim(),
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 1.6,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+          ),
+          const SizedBox(height: 14),
+          ...List.generate(sentences.length, (index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              )
-                  .animate(delay: Duration(milliseconds: 350 + index * 80))
-                  .fadeIn(duration: 350.ms)
-                  .slideY(begin: 0.05, end: 0);
-            }),
-          ],
-        ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      (index + 1).toString().padLeft(2, '0'),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.primary.withValues(alpha: 0.6),
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        sentences[index].trim(),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          height: 1.6,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+                .animate(delay: Duration(milliseconds: 350 + index * 80))
+                .fadeIn(duration: 350.ms)
+                .slideY(begin: 0.05, end: 0);
+          }),
+        ],
       ),
     );
   }
@@ -607,11 +618,9 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     final tips = _generateTips(exercise);
     if (tips.isEmpty) return const SizedBox.shrink();
 
-    return Transform.translate(
-      offset: const Offset(0, -4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Container(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer.withValues(alpha: 0.08),
@@ -675,12 +684,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                   )),
             ],
           ),
-        ),
       ),
-    )
-        .animate(delay: 500.ms)
-        .fadeIn(duration: 400.ms)
-        .slideY(begin: 0.05, end: 0);
+    ).animate(delay: 500.ms).fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 
   List<String> _generateTips(Exercise exercise) {
@@ -700,7 +705,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // BOTTOM ACTION BAR — Add to Workout + Log Exercise
+  // BOTTOM ACTION BAR — Add to Workout
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildBottomActionBar(BuildContext context, Exercise exercise) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -724,78 +729,171 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
             ),
           ),
         ),
-        // Add blur effect with BackdropFilter if desired
-        child: Row(
-          children: [
-            // Add to Workout button
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  // TODO: Navigate to add-to-workout flow
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon!')),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(
-                    color: colorScheme.onSurface,
-                    width: 2,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'ADD TO WORKOUT',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
+        child: SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () => _showAddToWorkoutSheet(context, exercise),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.onSurface,
+              foregroundColor: colorScheme.surface,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
-            const SizedBox(width: 12),
-
-            // Log Exercise button
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Navigate to logging flow
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon!')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primaryContainer,
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  elevation: 0,
-                  shadowColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'LOG EXERCISE',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
-                  ),
-                ),
+            child: Text(
+              'ADD TO WORKOUT',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
               ),
             ),
-          ],
+          ),
         ),
       ),
-    )
-        .animate(delay: 400.ms)
-        .fadeIn(duration: 400.ms)
-        .slideY(begin: 0.3, end: 0);
+    ).animate(delay: 400.ms).fadeIn(duration: 400.ms).slideY(begin: 0.3, end: 0);
+  }
+
+  void _showAddToWorkoutSheet(BuildContext context, Exercise exercise) {
+    final workoutProvider = context.read<WorkoutProvider>();
+    workoutProvider.loadPlans();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) {
+          final colorScheme = Theme.of(context).colorScheme;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'TAMBAHKAN KE WORKOUT',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+
+                Expanded(
+                  child: Consumer<WorkoutProvider>(
+                    builder: (context, provider, _) {
+                      if (provider.isLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (provider.plans.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.assignment_outlined, size: 48, color: colorScheme.outlineVariant),
+                              const SizedBox(height: 16),
+                              const Text('Belum ada rencana workout.'),
+                              const SizedBox(height: 24),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  Navigator.pushNamed(context, '/workout/create');
+                                },
+                                child: const Text('BUAT RENCANA BARU'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemCount: provider.plans.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final plan = provider.plans[index];
+                          return ListTile(
+                            contentPadding: const EdgeInsets.all(16),
+                            tileColor: colorScheme.surfaceContainerLow,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(plan.dayOfWeek ?? 'No day assigned'),
+                            trailing: const Icon(Icons.add_circle_outline),
+                            onTap: () async {
+                              Navigator.pop(context);
+                              _addExerciseToPlan(context, plan.id, exercise);
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _addExerciseToPlan(BuildContext context, String planId, Exercise exercise) async {
+    try {
+      final newExercise = PlanExerciseModel(
+        id: '',
+        planId: planId,
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        targetSets: 3,
+        targetReps: 12,
+        targetWeightKg: 0,
+        sortOrder: 999, // Will be handled by database or appended
+      );
+
+      await SupabaseService.instance.insertPlanExercise(newExercise);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"${exercise.name}" ditambahkan ke workout.'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menambahkan: $e')),
+        );
+      }
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

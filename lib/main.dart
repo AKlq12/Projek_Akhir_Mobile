@@ -39,6 +39,7 @@ import 'screens/tools/mini_game_screen.dart';
 import 'screens/tools/timezone_converter_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/notification_settings_screen.dart';
+import 'screens/profile/feedback_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -134,6 +135,7 @@ class FitProApp extends StatelessWidget {
             AppRoutes.miniGame: (_) => const MiniGameScreen(),
             AppRoutes.editProfile: (_) => const EditProfileScreen(),
             AppRoutes.notificationSettings: (_) => const NotificationSettingsScreen(),
+            AppRoutes.feedback: (_) => const FeedbackScreen(),
           },
         );
       },

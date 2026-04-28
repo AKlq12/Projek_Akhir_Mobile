@@ -284,7 +284,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         itemCount: 6,
-        itemBuilder: (_, __) => Padding(
+        itemBuilder: (_, _) => Padding(
           padding: const EdgeInsets.only(right: 10),
           child: Shimmer.fromColors(
             baseColor: colorScheme.surfaceContainerHigh,
@@ -434,7 +434,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
       itemCount: 6,
-      itemBuilder: (_, __) => Padding(
+      itemBuilder: (_, _) => Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Shimmer.fromColors(
           baseColor: colorScheme.surfaceContainerHigh,
@@ -534,8 +534,8 @@ class _ExerciseCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: exercise.primaryImageUrl!,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => _buildImagePlaceholder(context),
-                        errorWidget: (_, __, ___) =>
+                        placeholder: (_, _) => _buildImagePlaceholder(context),
+                        errorWidget: (_, _, _) =>
                             _buildImagePlaceholder(context),
                       )
                     : _buildImagePlaceholder(context),

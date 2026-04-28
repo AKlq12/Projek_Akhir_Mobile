@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/providers/auth_provider.dart';
 import '../../core/services/local_cache_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -89,17 +91,19 @@ class _MiniGameScreenState extends State<MiniGameScreen>
 
   // ── Hive persistence ────────────────────────────────────────────────────
   void _loadBestScore() {
+    final userId = context.read<AuthProvider>().user.id;
     final data = LocalCacheService.instance
-        .get(LocalCacheService.settingsBox, 'reflex_best_score');
+        .get(LocalCacheService.settingsBox, 'reflex_best_score_$userId');
     if (data != null && data['score'] != null) {
       setState(() => _bestScore = data['score'] as int);
     }
   }
 
   Future<void> _saveBestScore(int score) async {
+    final userId = context.read<AuthProvider>().user.id;
     await LocalCacheService.instance.put(
       LocalCacheService.settingsBox,
-      'reflex_best_score',
+      'reflex_best_score_$userId',
       {'score': score},
     );
   }

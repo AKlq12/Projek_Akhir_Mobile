@@ -41,4 +41,5 @@ class AppRoutes {
   static const String editProfile = '/profile/edit';
   static const String settings = '/profile/settings';
   static const String notificationSettings = '/profile/notification-settings';
+  static const String feedback = '/profile/feedback';
 }

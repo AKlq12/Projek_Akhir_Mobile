@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 
 import '../config/routes.dart';
 import '../core/providers/auth_provider.dart';
+import '../core/providers/chat_provider.dart';
+import '../core/providers/sensor_provider.dart';
+import '../core/providers/tools_provider.dart';
 import '../core/services/notification_service.dart';
 import '../core/services/supabase_service.dart';
 
@@ -48,6 +51,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigate based on auth state
     if (authProvider.isAuthenticated) {
+      // Load per-user data
+      context.read<ToolsProvider>().loadUserData(authProvider.user.id);
+      context.read<SensorProvider>().loadUserData(authProvider.user.id);
+      context.read<ChatProvider>().loadUserData(authProvider.user.id);
+      
       // Schedule workout reminder based on saved settings
       _scheduleReminder();
       Navigator.of(context).pushReplacementNamed(AppRoutes.main);

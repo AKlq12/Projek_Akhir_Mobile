@@ -399,12 +399,10 @@ class _WorkoutCreateScreenState extends State<WorkoutCreateScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final exerciseProvider = context.read<ExerciseProvider>();
 
-    // Initialize exercises if not loaded
-    if (exerciseProvider.categories.isEmpty) {
+    // Initialize exercises if not loaded or list is empty
+    if (exerciseProvider.exercises.isEmpty) {
       exerciseProvider.init();
     }
-
-    final searchController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -447,56 +445,15 @@ class _WorkoutCreateScreenState extends State<WorkoutCreateScreen> {
               const SizedBox(height: 16),
 
               // Search bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: TextField(
-                    controller: searchController,
-                    onChanged: (q) => exerciseProvider.search(q),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Search exercises...',
-                      hintStyle: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.outline,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: colorScheme.outline,
-                        size: 22,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
 
               // Exercise results
               Expanded(
                 child: Consumer<ExerciseProvider>(
                   builder: (context, exProvider, _) {
-                    final exercises = exProvider.searchQuery.isNotEmpty
-                        ? exProvider.searchResults
-                        : exProvider.exercises;
+                    final exercises = exProvider.exercises;
 
-                    if (exProvider.exercisesLoading &&
-                        exercises.isEmpty) {
+                    // Show loading indicator when initial list is loading
+                    if (exProvider.exercisesLoading && exercises.isEmpty) {
                       return const Center(
                         child: CircularProgressIndicator(),
                       );
@@ -538,9 +495,6 @@ class _WorkoutCreateScreenState extends State<WorkoutCreateScreen> {
                                 .read<WorkoutProvider>()
                                 .addFormExercise(planExercise);
 
-                            // Clear search and close
-                            exerciseProvider.search('');
-                            searchController.clear();
                             Navigator.pop(ctx);
                           },
                           contentPadding:

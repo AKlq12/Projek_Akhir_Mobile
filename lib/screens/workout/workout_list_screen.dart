@@ -317,7 +317,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
       itemCount: 4,
-      itemBuilder: (_, __) => Padding(
+      itemBuilder: (_, _) => Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Shimmer.fromColors(
           baseColor: colorScheme.surfaceContainerHigh,

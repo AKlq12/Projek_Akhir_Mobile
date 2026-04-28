@@ -1,10 +1,17 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/local_cache_service.dart';
+import 'chat_provider.dart';
+import 'home_provider.dart';
+import 'sensor_provider.dart';
+import 'tools_provider.dart';
+import 'workout_provider.dart';
 
 /// Authentication state for the app.
 enum AuthStatus {
@@ -85,6 +92,8 @@ class AuthProvider extends ChangeNotifier {
       if (event == AuthChangeEvent.signedOut) {
         _user = UserModel.empty;
         _status = AuthStatus.unauthenticated;
+        // Clear local cache when signed out externally (e.g. token expiry)
+        LocalCacheService.instance.clearAll();
         notifyListeners();
       } else if (event == AuthChangeEvent.tokenRefreshed ||
           event == AuthChangeEvent.signedIn) {
@@ -259,8 +268,26 @@ class AuthProvider extends ChangeNotifier {
   // SIGN OUT
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Signs out the current user.
-  Future<void> signOut() async {
+  /// Signs out the current user and clears all user-specific data
+  /// across all providers to ensure data isolation between accounts.
+  Future<void> signOut([BuildContext? context]) async {
+    // Clear all user-specific provider state if context is available
+    if (context != null) {
+      try {
+        context.read<WorkoutProvider>().resetState();
+        context.read<HomeProvider>().resetState();
+        context.read<ChatProvider>().resetState();
+        context.read<SensorProvider>().resetState();
+        context.read<ToolsProvider>().resetState();
+      } catch (e) {
+        debugPrint('Error clearing provider state: $e');
+      }
+    }
+
+    // Clear local cache (Hive)
+    await LocalCacheService.instance.clearAll();
+
+    // Sign out from Supabase
     await _authService.signOut();
     _user = UserModel.empty;
     _status = AuthStatus.unauthenticated;

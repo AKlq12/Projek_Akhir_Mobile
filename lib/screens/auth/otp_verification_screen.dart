@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 
 import '../../config/routes.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/chat_provider.dart';
+import '../../core/providers/sensor_provider.dart';
+import '../../core/providers/tools_provider.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({super.key});
@@ -51,6 +54,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (!mounted) return;
 
     if (success) {
+      // Load per-user data
+      context.read<ToolsProvider>().loadUserData(authProvider.user.id);
+      context.read<SensorProvider>().loadUserData(authProvider.user.id);
+      context.read<ChatProvider>().loadUserData(authProvider.user.id);
       Navigator.of(context).pushReplacementNamed(AppRoutes.main);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
