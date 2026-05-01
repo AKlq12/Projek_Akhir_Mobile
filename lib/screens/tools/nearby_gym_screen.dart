@@ -523,7 +523,8 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
                   size: 48, color: cs.onSurfaceVariant),
               const SizedBox(height: 12),
               Text(
-                'Could not load gyms. Check your connection and try again.',
+                provider.errorMessage?.replaceFirst('Exception: ', '') ??
+                    'Could not load gyms. Check your connection and try again.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,

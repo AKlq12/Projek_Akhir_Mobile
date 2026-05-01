@@ -59,35 +59,54 @@ class LocationService {
   }) async {
     final radiusMeters = (radiusKm * 1000).toInt();
 
-    // OverpassQL: search for fitness-related POIs
+    // OverpassQL: search for fitness-related POIs (nodes, ways, and relations)
+    // We use 'nwr' to catch all types and 'out center' to get a coordinate for polygons.
     final query = '''
-[out:json][timeout:25];
+[out:json][timeout:30];
 (
-  node["leisure"="fitness_centre"](around:$radiusMeters,$lat,$lng);
-  node["leisure"="sports_centre"](around:$radiusMeters,$lat,$lng);
-  node["amenity"="gym"](around:$radiusMeters,$lat,$lng);
+  nwr["leisure"="fitness_centre"](around:$radiusMeters,$lat,$lng);
+  nwr["leisure"="sports_centre"](around:$radiusMeters,$lat,$lng);
+  nwr["amenity"="gym"](around:$radiusMeters,$lat,$lng);
 );
-out body;
+out center;
 ''';
 
-    final uri = Uri.parse(AppConstants.overpassApiUrl);
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: {'data': query},
-    ).timeout(const Duration(seconds: 30));
+    final urls = [
+      AppConstants.overpassApiUrl,
+      'https://lz4.overpass-api.de/api/interpreter',
+      'https://z.overpass-api.de/api/interpreter',
+    ];
 
-    if (response.statusCode != 200) {
-      throw Exception('Overpass API error ${response.statusCode}');
+    Object? lastError;
+
+    for (final url in urls) {
+      try {
+        final uri = Uri.parse(url);
+        final response = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: {'data': query},
+        ).timeout(const Duration(seconds: 30));
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body) as Map<String, dynamic>;
+          final elements = data['elements'] as List<dynamic>? ?? [];
+          return _parseElements(elements, lat, lng);
+        } else {
+          lastError = 'API Error ${response.statusCode} from $url';
+        }
+      } catch (e) {
+        lastError = e;
+      }
     }
 
-    final data = json.decode(response.body) as Map<String, dynamic>;
-    final elements = data['elements'] as List<dynamic>? ?? [];
+    throw Exception('Failed to fetch gyms from all mirrors: $lastError');
+  }
 
+  List<GymModel> _parseElements(List<dynamic> elements, double lat, double lng) {
     final userLocation = LatLng(lat, lng);
-
-    // De-duplicate by OSM ID (multiple queries can return the same node)
     final Map<int, GymModel> seen = {};
+
     for (final elem in elements) {
       final gym = GymModel.fromOverpassJson(elem as Map<String, dynamic>);
       // Calculate distance

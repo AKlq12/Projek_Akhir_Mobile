@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -256,6 +257,30 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> updateProfile(UserModel updatedUser) async {
     try {
       _user = await _authService.updateProfile(updatedUser);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    }
+  }
+
+  /// Uploads and updates the user's profile picture.
+  Future<bool> uploadAvatar({
+    required Uint8List fileBytes,
+    required String fileExtension,
+  }) async {
+    if (_user.isEmpty) return false;
+    _setLoading();
+
+    try {
+      _user = await _authService.uploadAvatar(
+        userId: _user.id,
+        fileBytes: fileBytes,
+        fileExtension: fileExtension,
+      );
+      _status = AuthStatus.authenticated;
+      _errorMessage = '';
       notifyListeners();
       return true;
     } catch (e) {

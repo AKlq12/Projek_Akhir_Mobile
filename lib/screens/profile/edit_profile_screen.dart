@@ -35,6 +35,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _gender = 'Male';
   String _fitnessGoal = 'Build Muscle';
   bool _isSaving = false;
+  bool _isUploading = false;
 
   static const List<String> _genderOptions = ['Male', 'Female', 'Other'];
   static const List<String> _goalOptions = [
@@ -147,16 +148,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
 
     if (image != null && mounted) {
-      // For now, show a message. Full upload would require Supabase Storage.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Photo selected! Upload to Supabase Storage coming soon.',
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      setState(() => _isUploading = true);
+
+      try {
+        final bytes = await image.readAsBytes();
+        final extension = image.name.split('.').last;
+
+        final success = await context.read<AuthProvider>().uploadAvatar(
+              fileBytes: bytes,
+              fileExtension: extension,
+            );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                success
+                    ? 'Profile photo updated! 📸'
+                    : 'Failed to upload photo. Please ensure "avatars" bucket exists.',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+              ),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor:
+                  success ? null : Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -499,11 +529,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ],
                     ),
                     child: Center(
-                      child: Icon(
-                        Icons.photo_camera_rounded,
-                        size: 16,
-                        color: colorScheme.onPrimary,
-                      ),
+                      child: _isUploading
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.onPrimary,
+                              ),
+                            )
+                          : Icon(
+                              Icons.photo_camera_rounded,
+                              size: 16,
+                              color: colorScheme.onPrimary,
+                            ),
                     ),
                   ),
                 ),

@@ -39,11 +39,25 @@ class GymModel {
       address = number != null ? '$street No. $number' : street;
     }
 
+    // Overpass nodes have lat/lon at top level.
+    // Ways/Relations with 'out center' have them inside a 'center' object.
+    double? lat;
+    double? lon;
+
+    if (json.containsKey('lat') && json.containsKey('lon')) {
+      lat = (json['lat'] as num).toDouble();
+      lon = (json['lon'] as num).toDouble();
+    } else if (json.containsKey('center')) {
+      final center = json['center'] as Map<String, dynamic>;
+      lat = (center['lat'] as num).toDouble();
+      lon = (center['lon'] as num).toDouble();
+    }
+
     return GymModel(
       id: json['id'] as int,
       name: (tags['name'] as String?) ?? 'Unnamed Gym',
-      lat: (json['lat'] as num).toDouble(),
-      lng: (json['lon'] as num).toDouble(),
+      lat: lat ?? 0.0,
+      lng: lon ?? 0.0,
       address: address,
     );
   }

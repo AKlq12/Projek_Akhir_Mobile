@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
@@ -269,6 +270,42 @@ class AuthService {
       return await fetchProfile(user.id);
     } catch (e) {
       throw AuthException('Failed to update profile: ${e.toString()}');
+    }
+  }
+
+  /// Uploads a profile picture to Supabase Storage and updates the user profile.
+  Future<UserModel> uploadAvatar({
+    required String userId,
+    required Uint8List fileBytes,
+    required String fileExtension,
+  }) async {
+    try {
+      final fileName = 'avatar_$userId.${fileExtension.replaceAll('.', '')}';
+      final path = fileName; // Upload directly to bucket root or specific folder
+
+      // 1. Upload to Supabase Storage (using upsert to overwrite existing)
+      await _supabase.storage.from('avatars').uploadBinary(
+            path,
+            fileBytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
+
+      // 2. Get public URL
+      final imageUrl = _supabase.storage.from('avatars').getPublicUrl(path);
+
+      // 3. Update profile row with the new URL
+      // We append a timestamp to the URL to bust cache if the filename is the same
+      final timestampedUrl = '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      
+      await _supabase
+          .from('profiles')
+          .update({'avatar_url': timestampedUrl})
+          .eq('id', userId);
+
+      // 4. Return updated profile
+      return await fetchProfile(userId);
+    } catch (e) {
+      throw AuthException('Failed to upload avatar: ${e.toString()}');
     }
   }
 
