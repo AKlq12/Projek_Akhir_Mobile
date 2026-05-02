@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:hive_ce/hive_ce.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/constants.dart';
@@ -116,8 +117,17 @@ class SensorProvider extends ChangeNotifier {
   }
 
   /// Starts real-time step tracking.
-  void startTracking() {
-    if (_isTracking) return;
+  Future<bool> startTracking() async {
+    if (_isTracking) return true;
+
+    final status = await Permission.activityRecognition.request();
+    if (status.isDenied || status.isPermanentlyDenied) {
+      _errorMessage = 'Activity Recognition permission is required for step counting.';
+      notifyListeners();
+      return false;
+    }
+    
+    _errorMessage = '';
 
     _sensorService.startStepCounting(
       onStep: (steps) {
@@ -137,6 +147,7 @@ class SensorProvider extends ChangeNotifier {
 
     _isTracking = true;
     notifyListeners();
+    return true;
   }
 
   /// Stops real-time step tracking and persists the count.

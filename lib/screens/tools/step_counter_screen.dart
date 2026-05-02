@@ -367,11 +367,20 @@ class _StepCounterScreenState extends State<StepCounterScreen>
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           if (isTracking) {
             provider.stopTracking();
           } else {
-            provider.startTracking();
+            final success = await provider.startTracking();
+            if (!success && context.mounted && provider.errorMessage.isNotEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(provider.errorMessage),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: colorScheme.error,
+                ),
+              );
+            }
           }
         },
         child: AnimatedContainer(
