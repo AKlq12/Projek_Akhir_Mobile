@@ -343,6 +343,17 @@ class AuthService {
     }
   }
 
+  /// Updates the user's password.
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } catch (e) {
+      throw AuthException('Failed to update password: ${e.toString()}');
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // PRIVATE HELPERS
   // ─────────────────────────────────────────────────────────────────────────

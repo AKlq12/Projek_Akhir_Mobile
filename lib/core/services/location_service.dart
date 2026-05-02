@@ -1,7 +1,10 @@
 import 'dart:convert';
-
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
+
+import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../config/constants.dart';
@@ -50,78 +53,114 @@ class LocationService {
   // OVERPASS API — NEARBY GYMS
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Queries the Overpass API for fitness centres / gyms within [radiusKm]
-  /// kilometres of [lat], [lng]. Results are sorted by distance ascending.
+  /// Fetches gyms nearby using the local CSV file.
   Future<List<GymModel>> fetchNearbyGyms(
     double lat,
     double lng, {
     double radiusKm = 5.0,
   }) async {
-    final radiusMeters = (radiusKm * 1000).toInt();
+    try {
+      final csvString = await rootBundle.loadString('assets/data/gyms.csv');
+      final rows = Csv().decode(csvString);
 
-    // OverpassQL: search for fitness-related POIs (nodes, ways, and relations)
-    // We use 'nwr' to catch all types and 'out center' to get a coordinate for polygons.
-    final query = '''
-[out:json][timeout:30];
-(
-  nwr["leisure"="fitness_centre"](around:$radiusMeters,$lat,$lng);
-  nwr["leisure"="sports_centre"](around:$radiusMeters,$lat,$lng);
-  nwr["amenity"="gym"](around:$radiusMeters,$lat,$lng);
-);
-out center;
-''';
+      final Map<int, GymModel> seen = {};
+      final regex = RegExp(r'!3d([-\d.]+)!4d([-\d.]+)');
+      int idCounter = 1;
 
-    final urls = [
-      AppConstants.overpassApiUrl,
-      'https://lz4.overpass-api.de/api/interpreter',
-      'https://z.overpass-api.de/api/interpreter',
-    ];
+      for (int i = 1; i < rows.length; i++) {
+        final row = rows[i];
+        if (row.length < 5) continue;
 
-    Object? lastError;
+        final url = row[0].toString();
+        final name = row[1].toString().trim();
+        final category = row[4].toString().toLowerCase();
 
-    for (final url in urls) {
-      try {
-        final uri = Uri.parse(url);
-        final response = await http.post(
-          uri,
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: {'data': query},
-        ).timeout(const Duration(seconds: 30));
-
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body) as Map<String, dynamic>;
-          final elements = data['elements'] as List<dynamic>? ?? [];
-          return _parseElements(elements, lat, lng);
-        } else {
-          lastError = 'API Error ${response.statusCode} from $url';
+        // 1. Skip rows that aren't fitness/gyms
+        if (name.isEmpty || url.isEmpty) continue;
+        if (category.contains('toko') || 
+            category.contains('vila') || 
+            category.contains('hotel') ||
+            category.contains('pakaian') ||
+            category.contains('panjat')) {
+          continue;
         }
-      } catch (e) {
-        lastError = e;
-      }
-    }
 
-    throw Exception('Failed to fetch gyms from all mirrors: $lastError');
+        // 2. Extract Coordinates
+        final match = regex.firstMatch(url);
+        if (match != null && match.groupCount >= 2) {
+          final gymLat = double.tryParse(match.group(1)!);
+          final gymLng = double.tryParse(match.group(2)!);
+
+          if (gymLat != null && gymLng != null) {
+            // 3. Calculate distance
+            final distance = const Distance().as(
+              LengthUnit.Kilometer,
+              LatLng(lat, lng),
+              LatLng(gymLat, gymLng),
+            );
+
+            // Filter if it exceeds the maximum radius initially requested
+            if (distance > radiusKm) continue;
+
+            // Address logic: usually in row[6]
+            String? address;
+            if (row.length > 6) {
+               final addrStr = row[6].toString().trim();
+               if (addrStr.isNotEmpty && addrStr != '·') {
+                 address = addrStr;
+               }
+            }
+
+            final gym = GymModel(
+              id: idCounter++,
+              name: name,
+              lat: gymLat,
+              lng: gymLng,
+              address: address,
+              distanceKm: distance,
+            );
+
+            seen[gym.id] = gym;
+          }
+        }
+      }
+
+      final gyms = seen.values.toList()
+        ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+      return gyms;
+
+    } catch (e) {
+      debugPrint('[LocationService] CSV fetch error: $e');
+      throw Exception('Gagal membaca data gym lokal.');
+    }
   }
 
-  List<GymModel> _parseElements(List<dynamic> elements, double lat, double lng) {
-    final userLocation = LatLng(lat, lng);
-    final Map<int, GymModel> seen = {};
+  // ─────────────────────────────────────────────────────────────────────────
+  // ROUTING (OSRM)
+  // ─────────────────────────────────────────────────────────────────────────
 
-    for (final elem in elements) {
-      final gym = GymModel.fromOverpassJson(elem as Map<String, dynamic>);
-      // Calculate distance
-      gym.distanceKm = _distanceCalculator.as(
-            LengthUnit.Meter,
-            userLocation,
-            LatLng(gym.lat, gym.lng),
-          ) /
-          1000;
-      seen.putIfAbsent(gym.id, () => gym);
+  /// Fetches a driving route from [start] to [end] using the public OSRM API.
+  Future<List<LatLng>?> fetchRoute(LatLng start, LatLng end) async {
+    try {
+      // OSRM expects longitude,latitude
+      final url =
+          'https://router.project-osrm.org/route/v1/driving/\${start.longitude},\${start.latitude};\${end.longitude},\${end.latitude}?overview=full&geometries=geojson';
+      
+      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['routes'] != null && (data['routes'] as List).isNotEmpty) {
+          final coordinates = data['routes'][0]['geometry']['coordinates'] as List;
+          return coordinates.map((coord) {
+            // GeoJSON coordinates are [longitude, latitude]
+            return LatLng(coord[1] as double, coord[0] as double);
+          }).toList();
+        }
+      }
+    } catch (e) {
+      // Return null if routing fails (e.g., timeout, network issue)
     }
-
-    final gyms = seen.values.toList()
-      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
-
-    return gyms;
+    return null;
   }
 }

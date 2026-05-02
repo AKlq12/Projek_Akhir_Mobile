@@ -142,7 +142,7 @@ class NotificationService {
       'Time to crush your workout! 💪 Your body is ready — let\'s make today count.',
       scheduledTime,
       details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
@@ -253,9 +253,8 @@ class NotificationService {
 
   /// Returns the next occurrence of [hour]:[minute] in the local timezone.
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(
-      tz.local,
+    final now = DateTime.now();
+    var scheduledDate = DateTime(
       now.year,
       now.month,
       now.day,
@@ -264,11 +263,11 @@ class NotificationService {
     );
 
     // If the time has already passed today, schedule for tomorrow
-    if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    return scheduled;
+    return tz.TZDateTime.from(scheduledDate, tz.local);
   }
 
   /// Cancels all notifications.

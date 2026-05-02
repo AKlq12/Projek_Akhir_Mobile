@@ -53,9 +53,9 @@ Guidelines:
       throw Exception('GEMINI_API_KEY tidak ditemukan di .env');
     }
 
-    debugPrint('[GeminiService] Initializing with model: gemini-1.5-flash');
+    debugPrint('[GeminiService] Initializing with model: gemini-flash-latest');
     _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-flash-latest',
       apiKey: apiKey,
       systemInstruction: Content.text(_systemInstruction),
       generationConfig: GenerationConfig(
@@ -148,7 +148,7 @@ Guidelines:
   // ───────────────────────────────────────────────────────────────────────────
   Exception _mapError(GenerativeAIException e) {
     final msg = e.message.toLowerCase();
-    if (msg.contains('rate') || msg.contains('quota')) {
+    if (msg.contains('rate limit') || msg.contains('quota') || msg.contains('429')) {
       return Exception(
         'Batas permintaan tercapai. Tunggu beberapa saat dan coba lagi.',
       );

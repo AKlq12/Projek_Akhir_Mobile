@@ -50,7 +50,10 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     // Navigate based on auth state
-    if (authProvider.isAuthenticated) {
+    if (authProvider.isPasswordRecovery) {
+      authProvider.clearPasswordRecovery();
+      Navigator.of(context).pushReplacementNamed(AppRoutes.updatePassword);
+    } else if (authProvider.isAuthenticated) {
       // Load per-user data
       context.read<ToolsProvider>().loadUserData(authProvider.user.id);
       context.read<SensorProvider>().loadUserData(authProvider.user.id);

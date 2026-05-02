@@ -23,6 +23,7 @@ import 'core/providers/workout_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/otp_verification_screen.dart';
+import 'screens/auth/update_password_screen.dart';
 import 'screens/exercise/exercise_list_screen.dart';
 import 'screens/exercise/exercise_detail_screen.dart';
 import 'screens/exercise/exercise_category_screen.dart';
@@ -107,6 +108,7 @@ class FitProApp extends StatelessWidget {
         return MaterialApp(
           title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
+          navigatorKey: AppRoutes.navigatorKey,
 
           // Theme configuration
           theme: AppTheme.lightTheme,
@@ -120,6 +122,7 @@ class FitProApp extends StatelessWidget {
             AppRoutes.login: (_) => const LoginScreen(),
             AppRoutes.register: (_) => const RegisterScreen(),
             AppRoutes.otpVerification: (_) => const OtpVerificationScreen(),
+            AppRoutes.updatePassword: (_) => const UpdatePasswordScreen(),
             AppRoutes.main: (_) => const MainShell(),
             AppRoutes.exercises: (_) => const ExerciseListScreen(),
             AppRoutes.exerciseDetail: (_) => const ExerciseDetailScreen(),

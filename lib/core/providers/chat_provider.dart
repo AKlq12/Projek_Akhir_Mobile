@@ -132,8 +132,8 @@ class ChatProvider extends ChangeNotifier {
         onDone: () {
           _isLoading = false;
           _streamSub = null;
-          // If buffer is empty, provide fallback
-          if (buffer.isEmpty) {
+          // If buffer is empty AND there is no error, provide fallback
+          if (buffer.isEmpty && _error == null) {
             final index = _messages.indexWhere((m) => m.id == aiMessage.id);
             if (index != -1) {
               _messages[index] = aiMessage.copyWith(

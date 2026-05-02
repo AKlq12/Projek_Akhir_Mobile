@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Named route constants for FitPro navigation.
 ///
 /// All route strings are defined here to prevent typos
@@ -5,11 +7,14 @@
 class AppRoutes {
   AppRoutes._();
 
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   // ── Auth ────────────────────────────────────────────────────────────────
   static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
   static const String otpVerification = '/otp-verification';
+  static const String updatePassword = '/update-password';
 
   // ── Main Tabs ──────────────────────────────────────────────────────────
   static const String main = '/main';

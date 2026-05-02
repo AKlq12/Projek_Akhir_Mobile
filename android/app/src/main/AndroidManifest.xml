@@ -20,6 +20,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 
     <!-- Camera (Profile Photo) -->
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -48,6 +49,15 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            
+            <!-- Deep linking for Supabase Auth (Reset Password / Magic Link) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Skema URL: fitpro://reset-callback -->
+                <data android:scheme="fitpro" android:host="reset-callback" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

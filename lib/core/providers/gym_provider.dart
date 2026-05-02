@@ -26,6 +26,8 @@ class GymProvider extends ChangeNotifier {
   GymModel? _selectedGym;
   double _radiusKm = 5.0;
 
+  List<LatLng>? _currentRoute;
+
   // ── Getters ───────────────────────────────────────────────────────────────
   bool get isLoading => _isLoading;
   bool get permissionDenied => _permissionDenied;
@@ -34,6 +36,7 @@ class GymProvider extends ChangeNotifier {
   List<GymModel> get gyms => _filteredGyms;
   GymModel? get selectedGym => _selectedGym;
   double get radiusKm => _radiusKm;
+  List<LatLng>? get currentRoute => _currentRoute;
 
   /// Available radius filter options in km.
   static const List<double> radiusOptions = [1, 3, 5, 10, 20, 50];
@@ -47,6 +50,7 @@ class GymProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     _permissionDenied = false;
+    _currentRoute = null;
     notifyListeners();
 
     try {
@@ -94,7 +98,29 @@ class GymProvider extends ChangeNotifier {
   /// Selects a gym (highlights on the map, scrolls to card, etc.)
   void selectGym(GymModel? gym) {
     _selectedGym = gym;
+    if (gym == null) {
+      _currentRoute = null;
+    }
     notifyListeners();
+  }
+
+  /// Fetches the route from user location to the given gym and updates the map
+  Future<void> drawRouteTo(GymModel gym) async {
+    if (_userLocation == null) return;
+    
+    // Set the gym as selected so it gets highlighted
+    _selectedGym = gym;
+    notifyListeners();
+
+    final route = await _locationService.fetchRoute(
+      _userLocation!,
+      LatLng(gym.lat, gym.lng),
+    );
+
+    if (route != null) {
+      _currentRoute = route;
+      notifyListeners();
+    }
   }
 
   // ── Private ───────────────────────────────────────────────────────────────
@@ -106,6 +132,7 @@ class GymProvider extends ChangeNotifier {
     if (_selectedGym != null &&
         !_filteredGyms.any((g) => g.id == _selectedGym!.id)) {
       _selectedGym = null;
+      _currentRoute = null;
     }
   }
 }

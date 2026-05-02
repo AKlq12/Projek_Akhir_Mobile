@@ -379,35 +379,42 @@ class _TimezoneConverterScreenState extends State<TimezoneConverterScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              ...provider.timezones.map((tz) {
-                final isSelected = tz.timezoneId == provider.primaryTimezoneId;
-                return ListTile(
-                  title: Text(
-                    tz.city,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.onSurface,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${tz.abbreviation} (UTC${tz.utcOffsetHours >= 0 ? '+' : ''}${tz.utcOffsetHours})',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  trailing: isSelected
-                      ? Icon(Icons.check_circle_rounded,
-                          color: colorScheme.primary)
-                      : null,
-                  onTap: () {
-                    provider.setPrimaryTimezone(tz.timezoneId);
-                    Navigator.of(context).pop();
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: provider.timezones.length,
+                  itemBuilder: (context, index) {
+                    final tz = provider.timezones[index];
+                    final isSelected = tz.timezoneId == provider.primaryTimezoneId;
+                    return ListTile(
+                      title: Text(
+                        tz.city,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${tz.abbreviation} (UTC${tz.utcOffsetHours >= 0 ? '+' : ''}${tz.utcOffsetHours})',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(Icons.check_circle_rounded,
+                              color: colorScheme.primary)
+                          : null,
+                      onTap: () {
+                        provider.setPrimaryTimezone(tz.timezoneId);
+                        Navigator.of(context).pop();
+                      },
+                    );
                   },
-                );
-              }),
+                ),
+              ),
               const SizedBox(height: 16),
             ],
           ),

@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../config/routes.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/local_cache_service.dart';
@@ -44,6 +45,7 @@ class AuthProvider extends ChangeNotifier {
   String _errorMessage = '';
   bool _biometricAvailable = false;
   bool _biometricEnabled = false;
+  bool _isPasswordRecovery = false;
   StreamSubscription<AuthState>? _authSubscription;
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -57,6 +59,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _status == AuthStatus.loading;
   bool get biometricAvailable => _biometricAvailable;
   bool get biometricEnabled => _biometricEnabled;
+  bool get isPasswordRecovery => _isPasswordRecovery;
 
   // ─────────────────────────────────────────────────────────────────────────
   // INITIALIZATION
@@ -96,6 +99,13 @@ class AuthProvider extends ChangeNotifier {
         // Clear local cache when signed out externally (e.g. token expiry)
         LocalCacheService.instance.clearAll();
         notifyListeners();
+      } else if (event == AuthChangeEvent.passwordRecovery) {
+        _isPasswordRecovery = true;
+        // Automatically navigate to update password screen if navigator is ready
+        AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRoutes.updatePassword,
+          (route) => false,
+        );
       } else if (event == AuthChangeEvent.tokenRefreshed ||
           event == AuthChangeEvent.signedIn) {
         // Session refreshed — no need to re-fetch, just keep going
@@ -340,8 +350,24 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Updates the user's password.
+  Future<bool> updatePassword(String newPassword) async {
+    _setLoading();
+
+    try {
+      await _authService.updatePassword(newPassword);
+      _status = AuthStatus.authenticated;
+      _errorMessage = '';
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
-  // ERROR MANAGEMENT
+  // ERROR & STATE MANAGEMENT
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Clears the error message.
@@ -351,6 +377,11 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.unauthenticated;
     }
     notifyListeners();
+  }
+
+  /// Clears the password recovery flag.
+  void clearPasswordRecovery() {
+    _isPasswordRecovery = false;
   }
 
   // ─────────────────────────────────────────────────────────────────────────

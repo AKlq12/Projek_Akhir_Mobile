@@ -18,7 +18,7 @@ class NotificationSettingsModel {
 
   factory NotificationSettingsModel.fromJson(Map<String, dynamic> json) {
     return NotificationSettingsModel(
-      id: json['id'] as String,
+      id: json['id']?.toString() ?? '',
       userId: json['user_id'] as String,
       workoutReminder: json['workout_reminder'] as bool? ?? true,
       reminderTime: json['reminder_time'] as String? ?? '08:00',

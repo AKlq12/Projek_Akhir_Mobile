@@ -445,7 +445,7 @@ class _StepCounterScreenState extends State<StepCounterScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final weeklySteps = provider.weeklySteps;
     final maxSteps = weeklySteps.reduce((a, b) => a > b ? a : b);
-    final chartMax = maxSteps > 0 ? (maxSteps * 1.3) : 10000.0;
+    final chartMax = maxSteps > 10000 ? (maxSteps * 1.3) : 10000.0;
 
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final todayIndex = DateTime.now().weekday - 1;
@@ -496,8 +496,8 @@ class _StepCounterScreenState extends State<StepCounterScreen>
 
           // Bar Chart
           Container(
-            height: 200,
-            padding: const EdgeInsets.fromLTRB(0, 16, 16, 0),
+            height: 220,
+            padding: const EdgeInsets.fromLTRB(0, 24, 24, 8),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(20),
@@ -541,7 +541,7 @@ class _StepCounterScreenState extends State<StepCounterScreen>
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 42,
+                      reservedSize: 56,
                       getTitlesWidget: (value, meta) {
                         if (value == 0) return const SizedBox.shrink();
                         return Padding(
@@ -561,6 +561,7 @@ class _StepCounterScreenState extends State<StepCounterScreen>
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 40,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
                         if (idx < 0 || idx >= dayLabels.length) {
@@ -602,7 +603,7 @@ class _StepCounterScreenState extends State<StepCounterScreen>
                     barRods: [
                       BarChartRodData(
                         toY: weeklySteps[index].toDouble(),
-                        width: 24,
+                        width: 18,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(8),
                         ),

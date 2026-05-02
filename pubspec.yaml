@@ -70,6 +70,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   sqflite: ^2.4.1
   path: ^1.9.1
+  csv: ^8.0.0
 
 dev_dependencies:
   flutter_test:
@@ -80,3 +81,4 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/data/

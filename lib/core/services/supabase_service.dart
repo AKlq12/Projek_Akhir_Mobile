@@ -379,10 +379,13 @@ class SupabaseService {
   Future<NotificationSettingsModel> upsertNotificationSettings(
       NotificationSettingsModel settings) async {
     _requireAuth();
+    final upsertData = settings.toUpsertJson();
+    upsertData['user_id'] = _userId!;
+    
     final data = await _client
         .from('notification_settings')
         .upsert(
-          settings.toUpsertJson(),
+          upsertData,
           onConflict: 'user_id',
         )
         .select()

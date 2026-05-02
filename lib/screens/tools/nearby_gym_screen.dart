@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../core/models/gym_model.dart';
 import '../../core/providers/gym_provider.dart';
@@ -165,8 +166,7 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
     final cs = Theme.of(context).colorScheme;
     final center = provider.userLocation ?? const LatLng(-6.2088, 106.8456);
 
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.55,
+    return Positioned.fill(
       child: FlutterMap(
         mapController: _mapController,
         options: MapOptions(
@@ -180,6 +180,18 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             userAgentPackageName: 'com.fitpro.fitness',
           ),
+
+          // Route Polyline
+          if (provider.currentRoute != null && provider.currentRoute!.isNotEmpty)
+            PolylineLayer(
+              polylines: [
+                Polyline(
+                  points: provider.currentRoute!,
+                  strokeWidth: 5.0,
+                  color: Colors.amberAccent,
+                ),
+              ],
+            ),
 
           // Markers
           MarkerLayer(
@@ -232,6 +244,8 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
       initialChildSize: 0.48,
       minChildSize: 0.20,
       maxChildSize: 0.85,
+      snap: true,
+      snapSizes: const [0.20, 0.48, 0.85],
       controller: _sheetController,
       builder: (context, scrollController) {
         return Container(
@@ -253,33 +267,41 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
               ),
             ),
           ),
-          child: Column(
-            children: [
+          child: CustomScrollView(
+            controller: scrollController,
+            physics: const ClampingScrollPhysics(),
+            slivers: [
               // ── Drag Handle ──────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.outlineVariant.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(2),
+              SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 8),
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: cs.outlineVariant.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
                 ),
               ),
 
               // ── Header & Filter ──────────────────────────────────────
-              _buildSheetHeader(context, provider),
+              SliverToBoxAdapter(
+                child: _buildSheetHeader(context, provider),
+              ),
 
               // ── Distance Chips ───────────────────────────────────────
-              _buildDistanceChips(context, provider),
+              SliverToBoxAdapter(
+                child: _buildDistanceChips(context, provider),
+              ),
 
-              const SizedBox(height: 8),
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
               // ── Gym List ─────────────────────────────────────────────
-              Expanded(
-                child: _buildGymList(context, provider, scrollController),
-              ),
+              _buildGymSliverList(context, provider),
             ],
           ),
         );
@@ -470,117 +492,133 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
   // GYM LIST
   // ═══════════════════════════════════════════════════════════════════════════
 
-  Widget _buildGymList(
-    BuildContext context,
-    GymProvider provider,
-    ScrollController scrollController,
-  ) {
+  Widget _buildGymSliverList(BuildContext context, GymProvider provider) {
     final cs = Theme.of(context).colorScheme;
 
     if (provider.isLoading) {
-      return const Center(child: SizedBox.shrink());
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
     if (provider.permissionDenied) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.location_off_rounded,
-                  size: 48, color: cs.onSurfaceVariant),
-              const SizedBox(height: 12),
-              Text(
-                'Enable location access to discover gyms near you.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: cs.onSurfaceVariant,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.location_off_rounded,
+                    size: 48, color: cs.onSurfaceVariant),
+                const SizedBox(height: 12),
+                Text(
+                  'Enable location access to discover gyms near you.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => provider.init(),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => provider.init(),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: () => Geolocator.openLocationSettings(),
+                  icon: const Icon(Icons.location_on_rounded, size: 18),
+                  label: const Text('Open Location Settings'),
+                ),
+                TextButton.icon(
+                  onPressed: () => Geolocator.openAppSettings(),
+                  icon: const Icon(Icons.settings_rounded, size: 18),
+                  label: const Text('Open App Settings'),
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
     if (provider.errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.cloud_off_rounded,
-                  size: 48, color: cs.onSurfaceVariant),
-              const SizedBox(height: 12),
-              Text(
-                provider.errorMessage?.replaceFirst('Exception: ', '') ??
-                    'Could not load gyms. Check your connection and try again.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: cs.onSurfaceVariant,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off_rounded,
+                    size: 48, color: cs.onSurfaceVariant),
+                const SizedBox(height: 12),
+                Text(
+                  provider.errorMessage?.replaceFirst('Exception: ', '') ??
+                      'Could not load gyms. Check your connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => provider.init(),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => provider.init(),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
     if (provider.gyms.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.fitness_center_rounded,
-                  size: 48, color: cs.onSurfaceVariant),
-              const SizedBox(height: 12),
-              Text(
-                'No gyms found within ${provider.radiusKm.toStringAsFixed(0)} km.\nTry increasing the search radius.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: cs.onSurfaceVariant,
-                  height: 1.5,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.fitness_center_rounded,
+                    size: 48, color: cs.onSurfaceVariant),
+                const SizedBox(height: 12),
+                Text(
+                  'No gyms found within ${provider.radiusKm.toStringAsFixed(0)} km.\nTry increasing the search radius.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurfaceVariant,
+                    height: 1.5,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
     }
 
-    return ListView.separated(
-      controller: scrollController,
-      physics: const BouncingScrollPhysics(),
+    return SliverPadding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
-      itemCount: provider.gyms.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final gym = provider.gyms[index];
-        final isSelected = provider.selectedGym?.id == gym.id;
-        return _buildGymCard(context, provider, gym, index, isSelected);
-      },
+      sliver: SliverList.separated(
+        itemCount: provider.gyms.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final gym = provider.gyms[index];
+          final isSelected = provider.selectedGym?.id == gym.id;
+          return _buildGymCard(context, provider, gym, index, isSelected);
+        },
+      ),
     );
   }
 
@@ -741,30 +779,55 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
                   ),
                 ),
 
-                const SizedBox(width: 12),
-
-                // Navigate button
-                GestureDetector(
-                  onTap: () => _navigateToGym(gym),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: cs.primary.withValues(alpha: 0.4),
-                        width: 1.5,
+                // Buttons
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Show Route button
+                    GestureDetector(
+                      onTap: () => provider.drawRouteTo(gym),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          'Show Route',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: cs.onPrimaryContainer,
+                          ),
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'Navigate',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: cs.primary,
+                    const SizedBox(height: 8),
+                    // Navigate button
+                    GestureDetector(
+                      onTap: () => _navigateToGym(gym),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: cs.primary.withValues(alpha: 0.4),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          'Navigate',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: cs.primary,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
