@@ -188,7 +188,7 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
                 Polyline(
                   points: provider.currentRoute!,
                   strokeWidth: 5.0,
-                  color: Colors.amberAccent,
+                  color: const Color.fromARGB(255, 0, 107, 174),
                 ),
               ],
             ),

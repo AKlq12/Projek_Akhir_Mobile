@@ -1,0 +1,22 @@
+Test ID,Nama Test,Hasil Diharapkan,Hasil Yang Didapatkan,Status,Note,Kriteria Utama
+Test 01,Register,Berhasil daftar akun baru dan diarahkan ke Home,Data berhasil masuk ke database dan user otomatis login,Lolos,-,Iya
+Test 02,Login,Berhasil masuk dengan akun yang sudah terdaftar,"Login sesuai yang diharapkan, diarahkan ke homepage",Lolos,-,Iya
+Test 03,Logout,Berhasil keluar dari akun dan kembali ke Splash/Login,"Logout berhasil, sesi dihapus, kembali ke halaman awal",Lolos,-,Iya
+Test 04,Edit Profil,Berhasil mengubah nama/bio dan data tersimpan,Data profil diperbarui sesuai input user,Lolos,-,Iya
+Test 05,Upload Foto Profil,Berhasil mengganti foto profil via Galeri/Kamera,Foto berhasil diupload ke storage dan tampil di profil,Lolos,-,Iya
+Test 06,Cari Latihan (Exercise),Berhasil mencari gerakan latihan berdasarkan nama,Hasil pencarian menampilkan daftar latihan yang sesuai,Lolos,-,Iya
+Test 07,Tambah Rencana Workout,Berhasil membuat jadwal latihan baru,Jadwal latihan tersimpan dan muncul di daftar rencana,Lolos,-,Iya
+Test 08,Cari Gym Terdekat,Berhasil menampilkan lokasi gym di sekitar user pada peta,Peta menampilkan marker lokasi gym dengan benar,Lolos,-,Iya
+Test 09,Konversi Mata Uang,Berhasil menghitung kurs mata uang terbaru,Nilai konversi tampil sesuai dengan kurs API terbaru,Lolos,-,Iya
+Test 10,Konversi Zona Waktu,Berhasil mengubah waktu antar zona waktu yang berbeda,Waktu dikonversi dengan tepat sesuai zona yang dipilih,Lolos,-,Iya
+Test 11,Penghitung Langkah,Sensor mendeteksi pergerakan dan menambah jumlah langkah,Angka langkah bertambah saat perangkat dibawa berjalan,Lolos,-,Iya
+Test 12,Shake Surprise,Muncul item/hadiah saat perangkat digoyang,Animasi dan item muncul saat sensor shake terdeteksi,Lolos,-,Iya
+Test 13,AI Fitness Chat,AI memberikan respon terkait pertanyaan kebugaran,AI menjawab pertanyaan dengan informasi yang relevan,Lolos,-,Iya
+Test 14,Kirim Kesan & Saran,Feedback berhasil terkirim ke database,Data feedback masuk ke Supabase/Database,Lolos,-,Iya
+Test 15,Notifikasi Pengingat Workout,Muncul notifikasi pengingat pada waktu yang dijadwalkan,Notifikasi muncul sesuai jam yang diatur user,Lolos,-,Iya
+Test 16,Notifikasi Target Langkah,Muncul notifikasi saat target langkah harian tercapai,Notifikasi "Step Goal Reached" muncul otomatis,Lolos,-,Iya
+Test 17,Hapus Pengingat Workout,Notifikasi tidak muncul lagi setelah dibatalkan/hapus,Pengingat berhasil dibatalkan dari sistem,Lolos,-,Iya
+Test 18,Pencarian Latihan (Filter),Bisa mencari latihan berdasarkan kategori (Otot),Latihan tampil sesuai kategori yang dipilih,Lolos,-,Iya
+Test 19,Pencarian Lokasi Gym,Bisa mencari gym berdasarkan nama/lokasi spesifik,Lokasi gym ditemukan dan tampil di peta,Lolos,-,Iya
+Test 20,Pencarian Zona Waktu,Bisa mencari kota/zona waktu dalam dialog "Add Timezone",Daftar kota terfilter sesuai dengan keyword yang dimasukkan,Lolos,-,Iya
+Test 21,Notifikasi Selesai Workout,Muncul notifikasi ucapan selamat setelah sesi latihan selesai,"Notifikasi ""Workout Complete"" muncul dengan detail durasi",Lolos,-,Iya

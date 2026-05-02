@@ -728,16 +728,29 @@ class _NotificationSettingsScreenState
           ),
           const SizedBox(height: 14),
 
-          // Test workout notification
+          // Test workout notification (schedules 5 seconds from now)
           _buildTestButton(
             context,
             icon: Icons.fitness_center_rounded,
             label: 'Test Workout Reminder',
             onTap: () async {
-              await NotificationService.instance.showWorkoutCompleted(
-                workoutName: 'Test Workout',
-                durationMinutes: 45,
+              await NotificationService.instance.scheduleTestNotification(
+                seconds: 5,
               );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Notification scheduled in 5 seconds...',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
             },
           ),
 

@@ -39,6 +39,7 @@ class NotificationService {
   static const int _workoutReminderId = 1001;
   static const int _stepGoalId = 1002;
   static const int _workoutCompleteId = 1003;
+  static const int _testReminderId = 1004;
 
   // ─────────────────────────────────────────────────────────────────────────
   // INITIALIZATION
@@ -50,8 +51,9 @@ class NotificationService {
   Future<void> init() async {
     if (_initialized) return;
 
-    // Initialize timezone database
+    // Initialize timezone database and set local timezone
     tz.initializeTimeZones();
+    _setLocalTimeZone();
 
     // Android settings
     const androidSettings = AndroidInitializationSettings(
@@ -75,15 +77,113 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    // Request permissions on Android 13+
+    // Create Android notification channels explicitly
     if (Platform.isAndroid) {
       final android = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
-      await android?.requestNotificationsPermission();
+
+      // Create workout reminder channel
+      await android?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _workoutChannelId,
+          _workoutChannelName,
+          description: _workoutChannelDesc,
+          importance: Importance.high,
+          playSound: true,
+          enableVibration: true,
+        ),
+      );
+
+      // Create achievements channel
+      await android?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _achievementChannelId,
+          _achievementChannelName,
+          description: _achievementChannelDesc,
+          importance: Importance.high,
+          playSound: true,
+          enableVibration: true,
+        ),
+      );
+
+      // Request POST_NOTIFICATIONS permission (Android 13+)
+      final notifGranted = await android?.requestNotificationsPermission();
+      debugPrint(
+        '[NotificationService] POST_NOTIFICATIONS permission: $notifGranted',
+      );
+
+      // Request SCHEDULE_EXACT_ALARM permission (Android 12+)
+      // This opens system settings for user to grant the permission
+      final canScheduleExact =
+          await android?.canScheduleExactNotifications() ?? false;
+      debugPrint(
+        '[NotificationService] canScheduleExactNotifications: $canScheduleExact',
+      );
+      if (!canScheduleExact) {
+        await android?.requestExactAlarmsPermission();
+      }
     }
 
     _initialized = true;
     debugPrint('[NotificationService] Initialized successfully');
+  }
+
+  /// Sets [tz.local] to the device's actual timezone.
+  ///
+  /// Without this, [tz.local] defaults to UTC, causing scheduled
+  /// notification times to be interpreted in the wrong timezone.
+  void _setLocalTimeZone() {
+    try {
+      final now = DateTime.now();
+      final offset = now.timeZoneOffset;
+
+      // Preferred timezone names by UTC offset (Indonesia-focused)
+      const preferredByOffsetHours = <int, String>{
+        7: 'Asia/Jakarta', // WIB
+        8: 'Asia/Makassar', // WITA
+        9: 'Asia/Jayapura', // WIT
+        5: 'Asia/Karachi',
+        -5: 'America/New_York',
+        -8: 'America/Los_Angeles',
+        0: 'Europe/London',
+        1: 'Europe/Paris',
+      };
+
+      // Try preferred timezone first
+      final preferredName = preferredByOffsetHours[offset.inHours];
+      if (preferredName != null) {
+        try {
+          final loc = tz.getLocation(preferredName);
+          tz.setLocalLocation(loc);
+          debugPrint(
+            '[NotificationService] Local timezone set to: $preferredName (offset: $offset)',
+          );
+          return;
+        } catch (_) {
+          // Preferred name not found in database, fall through to search
+        }
+      }
+
+      // Fallback: search for any timezone matching the offset
+      for (final entry in tz.timeZoneDatabase.locations.entries) {
+        final loc = entry.value;
+        final tzNow = tz.TZDateTime.now(loc);
+        if (tzNow.timeZoneOffset == offset) {
+          tz.setLocalLocation(loc);
+          debugPrint(
+            '[NotificationService] Local timezone set to: ${entry.key} (offset: $offset)',
+          );
+          return;
+        }
+      }
+
+      // Last fallback: log warning but continue (tz.local stays UTC)
+      debugPrint(
+        '[NotificationService] WARNING: Could not find timezone for offset $offset, using UTC',
+      );
+    } catch (e) {
+      debugPrint('[NotificationService] Failed to set local timezone: $e');
+    }
   }
 
   /// Called when user taps a notification.
@@ -101,6 +201,7 @@ class NotificationService {
   /// Schedules a daily workout reminder at the given [hour] and [minute].
   ///
   /// Cancels any existing reminder before scheduling a new one.
+  /// Falls back to inexact scheduling if exact alarm permission is not granted.
   Future<void> scheduleWorkoutReminder({
     required int hour,
     required int minute,
@@ -136,27 +237,146 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    await _plugin.zonedSchedule(
-      _workoutReminderId,
-      '🏋️ Workout Time!',
-      'Time to crush your workout! 💪 Your body is ready — let\'s make today count.',
-      scheduledTime,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
-    );
+    // Determine the best schedule mode based on permission availability
+    var scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
+    if (Platform.isAndroid) {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      final canExact =
+          await android?.canScheduleExactNotifications() ?? false;
+      if (canExact) {
+        scheduleMode = AndroidScheduleMode.exactAllowWhileIdle;
+      }
+      debugPrint(
+        '[NotificationService] Using schedule mode: $scheduleMode (canExact: $canExact)',
+      );
+    }
 
-    debugPrint(
-      '[NotificationService] Workout reminder scheduled at $hour:$minute',
-    );
+    try {
+      await _plugin.zonedSchedule(
+        _workoutReminderId,
+        '🏋️ Workout Time!',
+        'Time to crush your workout! 💪 Your body is ready — let\'s make today count.',
+        scheduledTime,
+        details,
+        androidScheduleMode: scheduleMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
+      );
+
+      debugPrint(
+        '[NotificationService] Workout reminder scheduled at $hour:$minute',
+      );
+
+      // Verify the notification was actually scheduled
+      final pending = await _plugin.pendingNotificationRequests();
+      final found = pending.any((n) => n.id == _workoutReminderId);
+      debugPrint(
+        '[NotificationService] Pending notifications: ${pending.length}, '
+        'workout reminder found: $found',
+      );
+    } catch (e) {
+      debugPrint(
+        '[NotificationService] ERROR scheduling workout reminder: $e',
+      );
+      // If zonedSchedule fails completely, try inexact as last resort
+      try {
+        await _plugin.zonedSchedule(
+          _workoutReminderId,
+          '🏋️ Workout Time!',
+          'Time to crush your workout! 💪 Your body is ready — let\'s make today count.',
+          scheduledTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+        debugPrint(
+          '[NotificationService] Fallback: scheduled with inexact mode',
+        );
+      } catch (e2) {
+        debugPrint(
+          '[NotificationService] CRITICAL: Even inexact scheduling failed: $e2',
+        );
+      }
+    }
   }
 
   /// Cancels the scheduled daily workout reminder.
   Future<void> cancelWorkoutReminder() async {
     await _plugin.cancel(_workoutReminderId);
     debugPrint('[NotificationService] Workout reminder cancelled');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TEST SCHEDULED NOTIFICATION
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Schedules a test notification [seconds] from now to verify that
+  /// scheduled notifications actually fire on this device.
+  Future<void> scheduleTestNotification({int seconds = 5}) async {
+    if (!_initialized) await init();
+
+    // Cancel any previous test notification
+    await _plugin.cancel(_testReminderId);
+
+    final scheduledTime =
+        tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
+
+    const androidDetails = AndroidNotificationDetails(
+      _workoutChannelId,
+      _workoutChannelName,
+      channelDescription: _workoutChannelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      fullScreenIntent: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    // Try inexact first (doesn't need special permission)
+    try {
+      await _plugin.zonedSchedule(
+        _testReminderId,
+        '🏋️ Workout Time!',
+        'Time to crush your workout! 💪 Your body is ready — let\'s make today count.',
+        scheduledTime,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+
+      debugPrint(
+        '[NotificationService] Test notification scheduled for $scheduledTime '
+        '(${seconds}s from now)',
+      );
+    } catch (e) {
+      debugPrint('[NotificationService] ERROR scheduling test: $e');
+      // Last resort: show immediately
+      await _plugin.show(
+        _testReminderId,
+        '🏋️ Workout Time!',
+        'Time to crush your workout! 💪 Your body is ready — let\'s make today count.',
+        details,
+        payload: 'test_workout',
+      );
+      debugPrint(
+        '[NotificationService] Fallback: showed instant notification instead',
+      );
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -252,9 +472,13 @@ class NotificationService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Returns the next occurrence of [hour]:[minute] in the local timezone.
+  ///
+  /// Constructs the time directly as [tz.TZDateTime] in [tz.local] to ensure
+  /// the hour and minute represent actual local time.
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = DateTime.now();
-    var scheduledDate = DateTime(
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
       now.year,
       now.month,
       now.day,
@@ -267,7 +491,10 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    return tz.TZDateTime.from(scheduledDate, tz.local);
+    debugPrint(
+      '[NotificationService] Next reminder at: $scheduledDate (tz: ${tz.local.name})',
+    );
+    return scheduledDate;
   }
 
   /// Cancels all notifications.

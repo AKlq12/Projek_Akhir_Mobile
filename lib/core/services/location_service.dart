@@ -144,7 +144,7 @@ class LocationService {
     try {
       // OSRM expects longitude,latitude
       final url =
-          'https://router.project-osrm.org/route/v1/driving/\${start.longitude},\${start.latitude};\${end.longitude},\${end.latitude}?overview=full&geometries=geojson';
+          'https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson';
       
       final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
       
@@ -159,6 +159,7 @@ class LocationService {
         }
       }
     } catch (e) {
+      debugPrint('[LocationService] Route fetch error: $e');
       // Return null if routing fails (e.g., timeout, network issue)
     }
     return null;
