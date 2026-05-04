@@ -15,7 +15,6 @@ import '../../core/providers/auth_provider.dart';
 /// - Full Name, Email (read-only), Height, Weight fields
 /// - Date of Birth picker
 /// - Gender & Fitness Goal dropdowns
-/// - Delete Account danger zone
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -364,14 +363,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
 
-                      // ── Danger Zone ──────────────────────────────────────
-                      const SizedBox(height: 40),
-                      Container(
-                        height: 1,
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.15),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildDangerZone(context),
+
                     ],
                   ),
                 ),
@@ -729,135 +721,5 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // DANGER ZONE — Delete Account
-  // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildDangerZone(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
 
-    return GestureDetector(
-      onTap: () => _showDeleteDialog(context),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colorScheme.error.withValues(alpha: 0.1),
-          ),
-        ),
-        child: Row(
-          children: [
-            // Warning icon
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.error.withValues(alpha: 0.1),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.warning_rounded,
-                  size: 22,
-                  color: colorScheme.error,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Delete Account',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'This action cannot be undone',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 22,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
-    )
-        .animate(delay: 500.ms)
-        .fadeIn(duration: 400.ms);
-  }
-
-  void _showDeleteDialog(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.warning_rounded, color: colorScheme.error),
-            const SizedBox(width: 8),
-            Text(
-              'Delete Account',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-            ),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to delete your account? '
-          'This action is permanent and cannot be reversed. '
-          'All your data, workout history, and progress will be lost.',
-          style: GoogleFonts.plusJakartaSans(height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-            ),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: colorScheme.error,
-              foregroundColor: colorScheme.onError,
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Account deletion requires server-side implementation.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: Text(
-              'Delete Forever',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -255,41 +255,91 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
               ),
             ),
           ),
-          child: CustomScrollView(
-            controller: scrollController,
-            physics: const ClampingScrollPhysics(),
-            slivers: [
-              // ── Drag Handle ──────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 12, bottom: 8),
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: cs.outlineVariant.withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(2),
+          child: Column(
+            children: [
+              // ── Drag Handle + Collapse Button (pinned) ──────────────
+              GestureDetector(
+                onTap: () {
+                  _sheetController.animateTo(
+                    0.20,
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                  );
+                },
+                onVerticalDragUpdate: (details) {
+                  final screenHeight = MediaQuery.of(context).size.height;
+                  final delta = -details.primaryDelta! / screenHeight;
+                  final newSize = (_sheetController.size + delta).clamp(0.20, 0.85);
+                  _sheetController.jumpTo(newSize);
+                },
+                onVerticalDragEnd: (details) {
+                  // Snap to nearest snap size
+                  const snapSizes = [0.20, 0.48, 0.85];
+                  final current = _sheetController.size;
+                  double nearest = snapSizes[0];
+                  double minDist = (current - nearest).abs();
+                  for (final s in snapSizes) {
+                    final dist = (current - s).abs();
+                    if (dist < minDist) {
+                      minDist = dist;
+                      nearest = s;
+                    }
+                  }
+                  _sheetController.animateTo(
+                    nearest,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                  );
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                  child: Column(
+                    children: [
+                      // Drag indicator bar
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: cs.outlineVariant.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                      // Minimize chevron icon
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 22,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                    ],
                   ),
                 ),
               ),
 
-              // ── Header & Filter ──────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _buildSheetHeader(context, provider),
+              // ── Scrollable Content ──────────────────────────────────
+              Expanded(
+                child: CustomScrollView(
+                  controller: scrollController,
+                  physics: const ClampingScrollPhysics(),
+                  slivers: [
+                    // ── Header & Filter ──────────────────────────────────
+                    SliverToBoxAdapter(
+                      child: _buildSheetHeader(context, provider),
+                    ),
+
+                    // ── Distance Chips ───────────────────────────────────
+                    SliverToBoxAdapter(
+                      child: _buildDistanceChips(context, provider),
+                    ),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+                    // ── Gym List ─────────────────────────────────────────
+                    _buildGymSliverList(context, provider),
+                  ],
+                ),
               ),
-
-              // ── Distance Chips ───────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _buildDistanceChips(context, provider),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-              // ── Gym List ─────────────────────────────────────────────
-              _buildGymSliverList(context, provider),
             ],
           ),
         );
