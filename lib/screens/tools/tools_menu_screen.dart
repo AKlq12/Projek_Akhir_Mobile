@@ -33,9 +33,6 @@ class ToolsMenuScreen extends StatelessWidget {
             // ── Bento Grid ──────────────────────────────────────────────
             SliverToBoxAdapter(child: _buildToolsGrid(context)),
 
-            // ── Featured Card ───────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildFeaturedCard(context)),
-
             // Bottom spacing
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
@@ -181,7 +178,7 @@ class ToolsMenuScreen extends StatelessWidget {
       _ToolItem(
         icon: Icons.payments_rounded,
         label: 'Currency\nConverter',
-        subtitle: 'Convert 160+ currencies',
+        subtitle: 'Convert currencies',
         gradientColors: const [Color(0xFF00B4D8), Color(0xFF4CD6FB)],
         route: AppRoutes.currencyConverter,
       ),
@@ -325,159 +322,6 @@ class ToolsMenuScreen extends StatelessWidget {
           end: const Offset(1, 1),
           curve: Curves.easeOutBack,
         );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FEATURED CARD — AI Nutrition Scanner
-  // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildFeaturedCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.surfaceContainerLowest,
-              colorScheme.surfaceContainerLow,
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.08),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.15),
-            width: 1,
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Background glow
-            Positioned(
-              right: -20,
-              bottom: -20,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorScheme.primaryContainer.withValues(alpha: 0.2),
-                ),
-              ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Badge
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: Text(
-                      'PREMIUM ACCESS',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    'AI Nutrition Scanner',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  Text(
-                    'Snap a photo of your meal for instant macro breakdown.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.4,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // CTA Button
-                  GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'AI Nutrition Scanner — coming soon!',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w600),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colorScheme.primaryContainer,
-                            colorScheme.primary,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.primaryContainer
-                                .withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        'Try Now',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    )
-        .animate(delay: 700.ms)
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: 0.05, end: 0);
   }
 }
 

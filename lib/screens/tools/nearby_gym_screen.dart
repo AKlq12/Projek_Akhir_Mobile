@@ -71,16 +71,20 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
               // ── Top App Bar ──────────────────────────────────────────
               _buildAppBar(context),
 
-              // ── Bottom Sheet ─────────────────────────────────────────
-              _buildBottomSheet(context, provider),
-
               // ── FAB Recenter ─────────────────────────────────────────
               if (provider.userLocation != null)
                 Positioned(
+                  key: const ValueKey('recenter_fab'),
                   bottom: MediaQuery.of(context).size.height * 0.48 + 16,
                   right: 16,
                   child: _buildRecenterFab(context, provider),
                 ),
+
+              // ── Bottom Sheet ─────────────────────────────────────────
+              KeyedSubtree(
+                key: const ValueKey('bottom_sheet'),
+                child: _buildBottomSheet(context, provider),
+              ),
 
               // ── Loading Overlay ──────────────────────────────────────
               if (provider.isLoading) _buildLoadingOverlay(context),
@@ -134,23 +138,7 @@ class _NearbyGymScreenState extends State<NearbyGymScreen>
                 ),
               ),
               const Spacer(),
-              IconButton(
-                onPressed: () {
-                  // Future: search
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Search — coming soon!',
-                        style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w600),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                icon: Icon(Icons.search_rounded, color: cs.primary),
-              ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 16),
             ],
           ),
         ),

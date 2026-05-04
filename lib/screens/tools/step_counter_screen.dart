@@ -505,8 +505,8 @@ class _StepCounterScreenState extends State<StepCounterScreen>
 
           // Bar Chart
           Container(
-            height: 220,
-            padding: const EdgeInsets.fromLTRB(0, 24, 24, 8),
+            height: 240,
+            padding: const EdgeInsets.fromLTRB(16, 24, 24, 16),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(20),
@@ -550,7 +550,7 @@ class _StepCounterScreenState extends State<StepCounterScreen>
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 56,
+                      reservedSize: 44,
                       getTitlesWidget: (value, meta) {
                         if (value == 0) return const SizedBox.shrink();
                         return Padding(
@@ -570,7 +570,7 @@ class _StepCounterScreenState extends State<StepCounterScreen>
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 40,
+                      reservedSize: 36,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
                         if (idx < 0 || idx >= dayLabels.length) {

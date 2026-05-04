@@ -174,7 +174,7 @@ class HomeProvider extends ChangeNotifier {
       _todayPlan = plans.cast<WorkoutPlanModel?>().firstWhere(
             (plan) =>
                 plan!.dayOfWeek?.toLowerCase() == todayDow.toLowerCase(),
-            orElse: () => plans.isNotEmpty ? plans.first : null,
+            orElse: () => null,
           );
 
       // Load plan exercises if a plan exists
