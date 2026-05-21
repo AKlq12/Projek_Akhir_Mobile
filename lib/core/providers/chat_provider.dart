@@ -51,28 +51,28 @@ class ChatProvider extends ChangeNotifier {
   // ───────────────────────────────────────────────────────────────────────────
   static const List<QuickAction> quickActions = [
     QuickAction(
-      label: 'Suggest Workout',
+      label: 'Rekomendasi Latihan',
       icon: IconLabel.workout,
       prompt:
-          'Suggest a complete workout routine for today. Include warm-up, main exercises with sets and reps, and cool-down.',
+          'Berikan saran rutinitas latihan lengkap untuk hari ini. Sertakan pemanasan, latihan utama beserta set dan repetisi, serta pendinginan.',
     ),
     QuickAction(
-      label: 'Nutrition Tips',
+      label: 'Tips Nutrisi',
       icon: IconLabel.nutrition,
       prompt:
-          'Give me practical nutrition tips for muscle building. Include meal timing, macros, and food suggestions.',
+          'Berikan saya tips nutrisi praktis untuk membentuk otot. Sertakan waktu makan, makro nutrisi, dan rekomendasi makanan.',
     ),
     QuickAction(
-      label: 'Form Check',
+      label: 'Cek Postur',
       icon: IconLabel.form,
       prompt:
-          'Explain proper form for the most common compound exercises (squat, deadlift, bench press). Include common mistakes to avoid.',
+          'Jelaskan postur tubuh yang benar untuk latihan beban umum (seperti squat, deadlift, bench press). Sertakan kesalahan umum yang harus dihindari.',
     ),
     QuickAction(
-      label: 'Recovery Advice',
+      label: 'Saran Pemulihan',
       icon: IconLabel.recovery,
       prompt:
-          'What are the best recovery strategies after an intense workout? Include stretching, nutrition, sleep tips.',
+          'Apa strategi pemulihan terbaik setelah latihan yang intens? Sertakan tips peregangan, nutrisi, dan tidur.',
     ),
   ];
 
@@ -85,9 +85,9 @@ class ChatProvider extends ChangeNotifier {
     if (_messages.isEmpty) {
       _messages.add(
         ChatMessage.ai(
-          'Hi there! 💪 I\'m your AI Fitness Coach. Ask me anything about '
-          'workouts, nutrition, exercise form, or let me create a '
-          'personalized plan for you!',
+          'Halo! 💪 Saya adalah Pelatih Kebugaran AI Anda. Tanyakan apa saja tentang '
+          'latihan, nutrisi, postur gerakan, atau biarkan saya membuatkan '
+          'rencana khusus untuk Anda!',
         ),
       );
       _saveChatHistory();

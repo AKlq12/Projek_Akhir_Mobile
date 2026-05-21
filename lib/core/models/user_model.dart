@@ -65,6 +65,23 @@ class UserModel {
     };
   }
 
+  /// Converts this model to a Map for SQLite insert/update.
+  Map<String, dynamic> toSQLiteJson() {
+    return {
+      'id': id,
+      'email': email,
+      'full_name': fullName,
+      'avatar_url': avatarUrl,
+      'date_of_birth': dateOfBirth?.toIso8601String().split('T').first,
+      'gender': gender,
+      'height_cm': heightCm,
+      'weight_kg': weightKg,
+      'fitness_goal': fitnessGoal,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
+
   /// Create a copy of this model with optional field overrides.
   UserModel copyWith({
     String? id,

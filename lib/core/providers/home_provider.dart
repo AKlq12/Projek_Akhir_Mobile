@@ -73,11 +73,20 @@ class HomeProvider extends ChangeNotifier {
     return total;
   }
 
+  /// Step goal (dynamically set, defaults to AppConstants).
+  int _stepGoal = AppConstants.defaultStepGoal;
+  int get stepGoal => _stepGoal;
+
+  /// Updates the step goal (called when notification settings change).
+  void setStepGoal(int goal) {
+    _stepGoal = goal;
+    notifyListeners();
+  }
+
   /// Step progress as 0.0–1.0 (relative to step goal).
   double get stepProgress {
-    final goal = AppConstants.defaultStepGoal;
-    if (goal == 0) return 0;
-    return (todayStepCount / goal).clamp(0.0, 1.0);
+    if (_stepGoal == 0) return 0;
+    return (todayStepCount / _stepGoal).clamp(0.0, 1.0);
   }
 
   /// Calorie progress as 0.0–1.0 (relative to 500 kcal goal).

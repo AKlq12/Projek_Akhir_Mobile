@@ -813,49 +813,52 @@ class _ExerciseFormCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => onChanged((value - 1).clamp(0, 999)),
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => onChanged((value - 1).clamp(0, 999)),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.remove, size: 14,
+                        color: colorScheme.onSurfaceVariant),
                   ),
-                  child: Icon(Icons.remove, size: 14,
-                      color: colorScheme.onSurfaceVariant),
                 ),
-              ),
-              SizedBox(
-                width: 32,
-                child: Center(
-                  child: Text(
-                    value.toString(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
+                SizedBox(
+                  width: 32,
+                  child: Center(
+                    child: Text(
+                      value.toString(),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              GestureDetector(
-                onTap: () => onChanged((value + 1).clamp(0, 999)),
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(8),
+                GestureDetector(
+                  onTap: () => onChanged((value + 1).clamp(0, 999)),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.add, size: 14,
+                        color: colorScheme.onSurfaceVariant),
                   ),
-                  child: Icon(Icons.add, size: 14,
-                      color: colorScheme.onSurfaceVariant),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

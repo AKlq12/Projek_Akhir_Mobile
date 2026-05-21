@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/feedback_model.dart';
+import '../models/user_model.dart';
 
 class SQLiteService {
   SQLiteService._();
@@ -35,7 +36,54 @@ class SQLiteService {
         created_at TEXT NOT NULL
       )
     ''');
+    
+    await db.execute('''
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        avatar_url TEXT,
+        date_of_birth TEXT,
+        gender TEXT,
+        height_cm REAL,
+        weight_kg REAL,
+        fitness_goal TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // USER METHODS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<void> insertUser(UserModel user) async {
+    final db = await database;
+    await db.insert(
+      'users',
+      user.toSQLiteJson(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<UserModel?> getUser(String userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+
+    if (maps.isNotEmpty) {
+      return UserModel.fromJson(maps.first);
+    }
+    return null;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FEEDBACK METHODS
+  // ─────────────────────────────────────────────────────────────────────────
 
   Future<void> insertFeedback(FeedbackModel feedback) async {
     final db = await database;

@@ -243,20 +243,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
         return ListView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          itemCount: chat.messages.length + (chat.isLoading ? 1 : 0),
+          itemCount: chat.messages.length,
           itemBuilder: (context, index) {
-            // Typing indicator at the end
-            if (index == chat.messages.length && chat.isLoading) {
-              final lastMsg = chat.messages.isNotEmpty
-                  ? chat.messages.last
-                  : null;
-              // Only show typing dots if last AI message is still empty
-              if (lastMsg != null && lastMsg.isAi && lastMsg.text.isEmpty) {
-                return _buildTypingIndicator(colorScheme);
-              }
-              return const SizedBox.shrink();
-            }
-
             final message = chat.messages[index];
             return _buildMessageBubble(message, colorScheme);
           },

@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/constants.dart';
+import '../models/notification_settings_model.dart';
 import '../models/exercise_model.dart';
 import '../models/step_log_model.dart';
 import '../services/sensor_service.dart';
@@ -35,7 +36,7 @@ class SensorProvider extends ChangeNotifier {
   // ─────────────────────────────────────────────────────────────────────────
 
   int _currentSteps = 0;
-  final int _dailyGoal = AppConstants.defaultStepGoal;
+  int _dailyGoal = AppConstants.defaultStepGoal;
   bool _isTracking = false;
   bool _isLoading = false;
   String _errorMessage = '';
@@ -98,13 +99,15 @@ class SensorProvider extends ChangeNotifier {
   // STEP COUNTER — ACTIONS
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Initializes the step counter: loads today's stored steps and weekly data.
+  /// Initializes the step counter: loads today's stored steps, weekly data,
+  /// and the user's custom step goal from Supabase.
   Future<void> initStepCounter() async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
 
     try {
+      await _loadStepGoalFromSettings();
       await _loadTodaySteps();
       await _loadWeeklySteps();
     } catch (e) {
@@ -114,6 +117,26 @@ class SensorProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Updates the daily step goal in real-time (called from Notification Settings).
+  void setDailyGoal(int goal) {
+    if (_dailyGoal == goal) return;
+    _dailyGoal = goal;
+    // Reset notification flag so user can be notified again with new goal
+    _stepGoalNotified = false;
+    notifyListeners();
+  }
+
+  /// Loads the step goal from the user's notification settings in Supabase.
+  Future<void> _loadStepGoalFromSettings() async {
+    try {
+      final settings = await _supabaseService.getNotificationSettings();
+      _dailyGoal = settings.stepGoal;
+    } catch (e) {
+      debugPrint('[SensorProvider] Load step goal error: $e');
+      // Keep the default if loading fails
+    }
   }
 
   /// Starts real-time step tracking.

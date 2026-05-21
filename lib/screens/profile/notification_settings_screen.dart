@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/models/notification_settings_model.dart';
+import '../../core/providers/home_provider.dart';
+import '../../core/providers/sensor_provider.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/supabase_service.dart';
 
@@ -86,6 +89,12 @@ class _NotificationSettingsScreenState
         );
       } else {
         await NotificationService.instance.cancelWorkoutReminder();
+      }
+
+      // Sync step goal to SensorProvider & HomeProvider in real-time
+      if (mounted) {
+        context.read<SensorProvider>().setDailyGoal(_stepGoal);
+        context.read<HomeProvider>().setStepGoal(_stepGoal);
       }
 
 

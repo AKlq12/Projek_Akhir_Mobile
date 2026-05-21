@@ -957,7 +957,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   subtitle: Text(
                     authProvider.biometricAvailable
-                        ? 'Use fingerprint or face ID'
+                        ? 'Use fingerprint'
                         : 'Not available on this device',
                     style: GoogleFonts.plusJakartaSans(fontSize: 12),
                   ),

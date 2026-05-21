@@ -5,6 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
+import 'sqlite_service.dart';
 
 /// Handles all authentication logic for FitPro:
 /// - Supabase email/password sign-in & sign-up
@@ -72,13 +73,18 @@ class AuthService {
       await _storeCredentials(email.trim(), password);
 
       // 4. Return user model
-      return UserModel(
+      final userModel = UserModel(
         id: user.id,
         email: email.trim(),
         fullName: fullName.trim(),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
+      
+      // 5. Save to local SQLite database
+      await SQLiteService.instance.insertUser(userModel);
+      
+      return userModel;
     } on AuthException {
       rethrow;
     } catch (e) {
@@ -138,7 +144,12 @@ class AuthService {
       await _storeCredentials(email.trim(), password);
 
       // Fetch profile
-      return await fetchProfile(user.id);
+      final userModel = await fetchProfile(user.id);
+      
+      // Sync to local SQLite database
+      await SQLiteService.instance.insertUser(userModel);
+      
+      return userModel;
     } on AuthException {
       rethrow;
     } catch (e) {
@@ -246,8 +257,19 @@ class AuthService {
 
       // Merge email from auth user
       final email = currentUser?.email ?? '';
-      return UserModel.fromJson({...data, 'email': email});
+      final userModel = UserModel.fromJson({...data, 'email': email});
+      
+      // Sync fetched profile to SQLite
+      await SQLiteService.instance.insertUser(userModel);
+      
+      return userModel;
     } catch (e) {
+      // If fetching from Supabase fails (e.g. offline), try getting from SQLite
+      final localUser = await SQLiteService.instance.getUser(userId);
+      if (localUser != null) {
+        return localUser;
+      }
+      
       // If profile doesn't exist yet, return a minimal model
       return UserModel(
         id: userId,
@@ -267,7 +289,12 @@ class AuthService {
           .update(user.toJson())
           .eq('id', user.id);
 
-      return await fetchProfile(user.id);
+      final updatedUser = await fetchProfile(user.id);
+      
+      // Sync updated profile to SQLite
+      await SQLiteService.instance.insertUser(updatedUser);
+      
+      return updatedUser;
     } catch (e) {
       throw AuthException('Failed to update profile: ${e.toString()}');
     }
