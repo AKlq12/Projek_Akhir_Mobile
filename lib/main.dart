@@ -18,6 +18,7 @@ import 'core/providers/theme_provider.dart';
 import 'core/providers/gym_provider.dart';
 import 'core/providers/chat_provider.dart';
 import 'core/providers/sensor_provider.dart';
+import 'core/providers/pose_estimation_provider.dart';
 import 'core/providers/tools_provider.dart';
 import 'core/providers/workout_provider.dart';
 import 'screens/auth/login_screen.dart';
@@ -38,6 +39,7 @@ import 'screens/tools/shake_exercise_screen.dart';
 import 'screens/tools/step_counter_screen.dart';
 import 'screens/tools/mini_game_screen.dart';
 import 'screens/tools/timezone_converter_screen.dart';
+import 'screens/tools/pose_estimation_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/notification_settings_screen.dart';
 import 'screens/profile/feedback_screen.dart';
@@ -79,6 +81,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => GymProvider()),
         ChangeNotifierProvider(create: (_) => SensorProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => PoseEstimationProvider()),
       ],
       child: const FitProApp(),
     ),
@@ -136,6 +139,7 @@ class FitProApp extends StatelessWidget {
             AppRoutes.stepCounter: (_) => const StepCounterScreen(),
             AppRoutes.shakeExercise: (_) => const ShakeExerciseScreen(),
             AppRoutes.miniGame: (_) => const MiniGameScreen(),
+            AppRoutes.poseEstimation: (_) => const PoseEstimationScreen(),
             AppRoutes.editProfile: (_) => const EditProfileScreen(),
             AppRoutes.notificationSettings: (_) => const NotificationSettingsScreen(),
             AppRoutes.feedback: (_) => const FeedbackScreen(),

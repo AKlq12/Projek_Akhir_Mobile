@@ -144,11 +144,145 @@ Guidelines:
   }
 
   // ───────────────────────────────────────────────────────────────────────────
+  // FOOD NUTRITION ANALYSIS (Multimodal — Image + Text)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  GenerativeModel? _nutritionModel;
+
+  static const _nutritionSystemInstruction = '''
+You are a professional nutritionist AI specializing in food recognition and nutritional analysis.
+
+When given a food image, you MUST provide:
+
+1. 🍽️ **Nama Makanan** — Identify all food items visible in the image
+2. 📏 **Estimasi Porsi** — Estimate the portion size
+3. 🔥 **Informasi Nutrisi** (per porsi):
+   - Kalori (kkal)
+   - Protein (g)
+   - Karbohidrat (g)
+   - Lemak (g)
+   - Serat (g)
+4. 💊 **Vitamin & Mineral** — Key vitamins and minerals present
+5. 💡 **Tips Kesehatan** — Health tips or suggestions related to the food
+
+Guidelines:
+- If you cannot identify the food, say so honestly
+- Provide estimated ranges when exact values are uncertain
+- Use emojis to make the response engaging
+- If the image is not food, politely inform the user
+- Respond in the same language the user uses (default: Indonesian/Bahasa Indonesia)
+- Format your response clearly with sections and bullet points
+''';
+
+  /// Ensures the nutrition model is initialized.
+  void _ensureNutritionModelInitialized() {
+    if (_nutritionModel != null) return;
+
+    final apiKey = AppConstants.geminiApiKey.trim();
+    if (apiKey.isEmpty) {
+      throw Exception('GEMINI_API_KEY tidak ditemukan di .env');
+    }
+
+    debugPrint('[GeminiService] Initializing nutrition model');
+    _nutritionModel = GenerativeModel(
+      model: 'gemini-flash-latest',
+      apiKey: apiKey,
+      systemInstruction: Content.text(_nutritionSystemInstruction),
+      generationConfig: GenerationConfig(
+        temperature: 0.4,
+        topK: 32,
+        topP: 0.9,
+        maxOutputTokens: 2048,
+      ),
+      safetySettings: [
+        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.sexuallyExplicit, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.dangerousContent, HarmBlockThreshold.none),
+      ],
+    );
+  }
+
+  /// Analyzes a food image and returns nutrition info as a stream.
+  Stream<String> analyzeFoodStream(
+    Uint8List imageBytes,
+    String mimeType,
+  ) async* {
+    _ensureNutritionModelInitialized();
+
+    try {
+      debugPrint(
+        '[GeminiService] Analyzing food image (${imageBytes.length} bytes, $mimeType)',
+      );
+
+      final prompt = Content.multi([
+        DataPart(mimeType, imageBytes),
+        TextPart(
+          'Analisis makanan pada gambar ini dan berikan informasi nutrisi lengkap. '
+          'Gunakan format yang rapi dengan emoji.',
+        ),
+      ]);
+
+      final response = _nutritionModel!.generateContentStream([prompt]);
+      await for (final chunk in response) {
+        final text = chunk.text;
+        if (text != null && text.isNotEmpty) {
+          debugPrint(
+            '[GeminiService] Food analysis chunk: ${text.length} chars',
+          );
+          yield text;
+        }
+      }
+    } on GenerativeAIException catch (e) {
+      debugPrint(
+        '[GeminiService] Food analysis GenerativeAIException: ${e.message}',
+      );
+      throw _mapError(e);
+    } catch (e) {
+      debugPrint('[GeminiService] Food analysis error: $e');
+      throw Exception('Gagal menganalisis gambar makanan: $e');
+    }
+  }
+
+  /// Analyzes a food image and returns complete nutrition info.
+  Future<String> analyzeFood(Uint8List imageBytes, String mimeType) async {
+    _ensureNutritionModelInitialized();
+
+    try {
+      debugPrint(
+        '[GeminiService] Analyzing food image (${imageBytes.length} bytes, $mimeType)',
+      );
+
+      final prompt = Content.multi([
+        DataPart(mimeType, imageBytes),
+        TextPart(
+          'Analisis makanan pada gambar ini dan berikan informasi nutrisi lengkap. '
+          'Gunakan format yang rapi dengan emoji.',
+        ),
+      ]);
+
+      final response = await _nutritionModel!.generateContent([prompt]);
+      debugPrint('[GeminiService] Food analysis complete');
+      return response.text ?? 'Maaf, tidak dapat menganalisis gambar makanan.';
+    } on GenerativeAIException catch (e) {
+      debugPrint(
+        '[GeminiService] Food analysis GenerativeAIException: ${e.message}',
+      );
+      throw _mapError(e);
+    } catch (e) {
+      debugPrint('[GeminiService] Food analysis error: $e');
+      throw Exception('Gagal menganalisis gambar makanan: $e');
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
   // ERROR MAPPING
   // ───────────────────────────────────────────────────────────────────────────
   Exception _mapError(GenerativeAIException e) {
     final msg = e.message.toLowerCase();
-    if (msg.contains('rate limit') || msg.contains('quota') || msg.contains('429')) {
+    if (msg.contains('rate limit') ||
+        msg.contains('quota') ||
+        msg.contains('429')) {
       return Exception(
         'Batas permintaan tercapai. Tunggu beberapa saat dan coba lagi.',
       );

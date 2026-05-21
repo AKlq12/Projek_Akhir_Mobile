@@ -41,6 +41,7 @@ class AppRoutes {
   static const String miniGame = '/tools/mini-game';
   static const String stepCounter = '/tools/step-counter';
   static const String shakeExercise = '/tools/shake-exercise';
+  static const String poseEstimation = '/tools/pose-estimation';
 
   // ── Profile ────────────────────────────────────────────────────────────
   static const String editProfile = '/profile/edit';

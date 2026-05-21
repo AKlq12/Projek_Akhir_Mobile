@@ -118,39 +118,6 @@ class _NotificationSettingsScreenState
     if (mounted) setState(() => _isSaving = false);
   }
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _reminderTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor:
-                  Theme.of(context).colorScheme.surfaceContainerLowest,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && picked != _reminderTime) {
-      setState(() {
-        _reminderTime = picked;
-
-      });
-    }
-  }
-
-  String _formatTime(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -175,14 +142,6 @@ class _NotificationSettingsScreenState
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                     child: _buildIllustrationCard(context),
-                  ),
-                ),
-
-                // ── Workout Reminder Section ─────────────────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: _buildWorkoutReminderSection(context),
                   ),
                 ),
 
@@ -338,183 +297,6 @@ class _NotificationSettingsScreenState
       ),
     )
         .animate(delay: 100.ms)
-        .fadeIn(duration: 400.ms)
-        .slideY(begin: 0.05, end: 0);
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // WORKOUT REMINDER SECTION
-  // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildWorkoutReminderSection(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section header
-          Text(
-            'WORKOUT REMINDER',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2.5,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Toggle row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _workoutReminder
-                        ? colorScheme.primaryContainer.withValues(alpha: 0.25)
-                        : colorScheme.surfaceContainerLow,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.alarm_rounded,
-                      size: 20,
-                      color: _workoutReminder
-                          ? colorScheme.onPrimaryContainer
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Daily Reminder',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        'Get reminded to workout every day',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: _workoutReminder,
-                  onChanged: (val) {
-                    setState(() {
-                      _workoutReminder = val;
-              
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Time picker (visible only when reminder is ON)
-          if (_workoutReminder) ...[
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _pickTime,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.access_time_filled_rounded,
-                      size: 22,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        'Reminder Time',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withValues(
-                          alpha: 0.2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: colorScheme.primaryContainer.withValues(
-                            alpha: 0.4,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        _formatTime(_reminderTime),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: colorScheme.onPrimaryContainer,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 22,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    )
-        .animate(delay: 200.ms)
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.05, end: 0);
   }
@@ -727,34 +509,6 @@ class _NotificationSettingsScreenState
             ),
           ),
           const SizedBox(height: 14),
-
-          // Test workout notification (schedules 5 seconds from now)
-          _buildTestButton(
-            context,
-            icon: Icons.fitness_center_rounded,
-            label: 'Test Workout Reminder',
-            onTap: () async {
-              await NotificationService.instance.scheduleTestNotification(
-                seconds: 5,
-              );
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Notification scheduled in 5 seconds...',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-          ),
-
-          const SizedBox(height: 10),
 
           // Test step goal notification
           _buildTestButton(

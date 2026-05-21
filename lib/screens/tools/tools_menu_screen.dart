@@ -217,6 +217,13 @@ class ToolsMenuScreen extends StatelessWidget {
         gradientColors: const [Color(0xFF22D3EE), Color(0xFF4ADE80)],
         route: AppRoutes.shakeExercise,
       ),
+      _ToolItem(
+        icon: Icons.accessibility_new_rounded,
+        label: 'Pose\nEstimation',
+        subtitle: 'AI squat counter',
+        gradientColors: const [Color(0xFF8B5CF6), Color(0xFFD946EF)],
+        route: AppRoutes.poseEstimation,
+      ),
     ];
 
     return Padding(
